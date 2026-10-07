@@ -1,0 +1,197 @@
+/* ============================================================
+   THEMES.CSS — Три темы оформления + атмосфера
+   Каждая тема: фон экранов, тексты, акценты, стол, фишки
+   ============================================================ */
+
+/* ============================================================
+   1. TRADITIONAL — слоновая кость, тёмное дерево, золото
+   ============================================================ */
+body[data-theme="traditional"] {
+  --bg-solid: #1a0f0a;
+
+  /* Атмосферные слои */
+  --atm-gradient: linear-gradient(135deg, #2a1810 0%, #1a0f0a 50%, #0d0805 100%);
+  --atm-pattern: radial-gradient(circle, rgba(212, 169, 85, 0.18) 1px, transparent 1.5px);
+  --atm-pattern-size: 60px 60px;
+  --atm-pattern-opacity: 0.4;
+  --atm-vignette: rgba(0, 0, 0, 0.7);
+
+  --bg-screen: linear-gradient(135deg, rgba(42, 24, 16, 0.96) 0%, rgba(26, 15, 10, 0.98) 100%);
+  --bg-header: rgba(20, 12, 8, 0.7);
+
+  --text-main: #f0e6d2;
+  --text-muted: #b09878;
+  --text-faint: #7a6a4a;
+
+  --accent-gold: #d4a955;
+  --accent-gold-dark: #a87833;
+  --accent-gold-bright: #f0c878;
+  --accent-gold-soft: rgba(212, 169, 85, 0.4);
+  --accent-gold-glow: rgba(212, 169, 85, 0.6);
+
+  --border-soft: #5a3a2a;
+  --shadow-soft: rgba(0, 0, 0, 0.2);
+  --shadow-medium: rgba(0, 0, 0, 0.4);
+  --shadow-strong: rgba(0, 0, 0, 0.65);
+
+  --btn-bg: rgba(60, 36, 24, 0.7);
+  --btn-bg-hover: rgba(80, 50, 32, 0.85);
+  --btn-border: #5a3a2a;
+  --btn-text: var(--text-main);
+
+  --card-bg: rgba(60, 36, 24, 0.6);
+  --card-bg-hover: rgba(80, 50, 32, 0.8);
+  --card-bg-active: rgba(100, 64, 40, 0.9);
+
+  --preview-bg: linear-gradient(135deg, #1a0f0a 0%, #2a1810 100%);
+  --preview-tile: var(--accent-gold);
+
+  /* Стол под фишками — тёмное лакированное дерево */
+  --table-bg:
+    radial-gradient(circle at 30% 30%, rgba(212, 169, 85, 0.08), transparent 60%),
+    linear-gradient(135deg, #3a2218 0%, #2a1810 50%, #1a0f0a 100%);
+  --table-highlight: rgba(212, 169, 85, 0.15);
+  --table-shadow: rgba(0, 0, 0, 0.5);
+  --table-border: #4a2a18;
+
+  /* Фишки — слоновая кость */
+  --tile-bg: linear-gradient(160deg, #fdf8ea 0%, #f5ecd5 40%, #e8dab8 100%);
+  --tile-border: #b8a878;
+  --tile-inner-border: rgba(180, 150, 90, 0.3);
+  --tile-highlight: rgba(255, 255, 255, 0.85);
+  --tile-shadow: rgba(120, 90, 50, 0.35);
+  --tile-free-glow: rgba(212, 169, 85, 0.5);
+  --tile-free-glow-soft: rgba(212, 169, 85, 0.25);
+  --tile-hover-glow: rgba(212, 169, 85, 0.85);
+  --tile-hover-glow-soft: rgba(212, 169, 85, 0.45);
+  --tile-hint-glow: rgba(212, 169, 85, 0.95);
+  --tile-hint-glow-soft: rgba(212, 169, 85, 0.55);
+}
+
+/* ============================================================
+   2. JADE — пастельные нефритовые тона, мрамор
+   ============================================================ */
+body[data-theme="jade"] {
+  --bg-solid: #f0ebe0;
+
+  --atm-gradient: linear-gradient(135deg, #e8e0d0 0%, #f0e8e0 50%, #e0e8e0 100%);
+  --atm-pattern: radial-gradient(circle, rgba(90, 138, 106, 0.15) 1px, transparent 1.5px);
+  --atm-pattern-size: 70px 70px;
+  --atm-pattern-opacity: 0.5;
+  --atm-vignette: rgba(60, 80, 70, 0.25);
+
+  --bg-screen: linear-gradient(135deg, rgba(248, 244, 232, 0.96) 0%, rgba(240, 232, 220, 0.98) 100%);
+  --bg-header: rgba(255, 255, 255, 0.7);
+
+  --text-main: #2a4a3a;
+  --text-muted: #6a8a7a;
+  --text-faint: #a8b8a8;
+
+  --accent-gold: #5a8a6a;
+  --accent-gold-dark: #3a6a4a;
+  --accent-gold-bright: #7aaa8a;
+  --accent-gold-soft: rgba(90, 138, 106, 0.35);
+  --accent-gold-glow: rgba(90, 138, 106, 0.5);
+
+  --border-soft: #c8d0c8;
+  --shadow-soft: rgba(0, 0, 0, 0.06);
+  --shadow-medium: rgba(0, 0, 0, 0.12);
+  --shadow-strong: rgba(0, 0, 0, 0.2);
+
+  --btn-bg: rgba(255, 255, 255, 0.6);
+  --btn-bg-hover: rgba(255, 255, 255, 0.9);
+  --btn-border: #c8d0c8;
+  --btn-text: var(--text-main);
+
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-bg-hover: rgba(255, 255, 255, 0.92);
+  --card-bg-active: rgba(220, 240, 220, 0.95);
+
+  --preview-bg: linear-gradient(135deg, #d8e0d8 0%, #e8e8e8 100%);
+  --preview-tile: var(--accent-gold);
+
+  /* Стол — мрамор */
+  --table-bg:
+    radial-gradient(circle at 30% 30%, rgba(180, 200, 190, 0.4), transparent 60%),
+    linear-gradient(135deg, #d8d8c8 0%, #c8c8b8 50%, #d0d0c0 100%);
+  --table-highlight: rgba(255, 255, 255, 0.7);
+  --table-shadow: rgba(80, 100, 90, 0.25);
+  --table-border: #b8c0b8;
+
+  /* Фишки — пастельный нефрит */
+  --tile-bg: linear-gradient(160deg, #ffffff 0%, #f5faf5 40%, #e8f0e8 100%);
+  --tile-border: #a8c0a8;
+  --tile-inner-border: rgba(120, 150, 120, 0.25);
+  --tile-highlight: rgba(255, 255, 255, 0.98);
+  --tile-shadow: rgba(120, 140, 120, 0.25);
+  --tile-free-glow: rgba(90, 138, 106, 0.55);
+  --tile-free-glow-soft: rgba(90, 138, 106, 0.3);
+  --tile-hover-glow: rgba(90, 138, 106, 0.85);
+  --tile-hover-glow-soft: rgba(90, 138, 106, 0.45);
+  --tile-hint-glow: rgba(90, 138, 106, 0.95);
+  --tile-hint-glow-soft: rgba(90, 138, 106, 0.55);
+}
+
+/* ============================================================
+   3. PORCELAIN — винтажный фарфор, синий с золотом
+   ============================================================ */
+body[data-theme="porcelain"] {
+  --bg-solid: #0a1a2a;
+
+  --atm-gradient: linear-gradient(135deg, #0f1e3a 0%, #1a2a4a 50%, #0a1a2a 100%);
+  --atm-pattern: radial-gradient(circle, rgba(232, 200, 120, 0.15) 1px, transparent 1.5px);
+  --atm-pattern-size: 60px 60px;
+  --atm-pattern-opacity: 0.4;
+  --atm-vignette: rgba(0, 0, 0, 0.7);
+
+  --bg-screen: linear-gradient(135deg, rgba(15, 30, 58, 0.96) 0%, rgba(10, 26, 42, 0.98) 100%);
+  --bg-header: rgba(10, 26, 42, 0.75);
+
+  --text-main: #f0e8d0;
+  --text-muted: #b8b098;
+  --text-faint: #787058;
+
+  --accent-gold: #e8c878;
+  --accent-gold-dark: #b89858;
+  --accent-gold-bright: #f5d898;
+  --accent-gold-soft: rgba(232, 200, 120, 0.4);
+  --accent-gold-glow: rgba(232, 200, 120, 0.6);
+
+  --border-soft: #2a3a5a;
+  --shadow-soft: rgba(0, 0, 0, 0.3);
+  --shadow-medium: rgba(0, 0, 0, 0.5);
+  --shadow-strong: rgba(0, 0, 0, 0.7);
+
+  --btn-bg: rgba(26, 42, 74, 0.7);
+  --btn-bg-hover: rgba(42, 58, 90, 0.85);
+  --btn-border: #2a3a5a;
+  --btn-text: var(--text-main);
+
+  --card-bg: rgba(26, 42, 74, 0.65);
+  --card-bg-hover: rgba(42, 58, 90, 0.85);
+  --card-bg-active: rgba(60, 80, 120, 0.9);
+
+  --preview-bg: linear-gradient(135deg, #0a1a2a 0%, #1a2a4a 100%);
+  --preview-tile: var(--accent-gold);
+
+  /* Стол — глубокий синий с золотом */
+  --table-bg:
+    radial-gradient(circle at 30% 30%, rgba(232, 200, 120, 0.08), transparent 60%),
+    linear-gradient(135deg, #1a2a4a 0%, #0f1e3a 50%, #0a1a2a 100%);
+  --table-highlight: rgba(232, 200, 120, 0.18);
+  --table-shadow: rgba(0, 0, 0, 0.6);
+  --table-border: #2a3a5a;
+
+  /* Фишки — белый фарфор */
+  --tile-bg: linear-gradient(160deg, #faf8f0 0%, #f0ece0 40%, #e8e4d8 100%);
+  --tile-border: #4a5878;
+  --tile-inner-border: rgba(74, 88, 120, 0.25);
+  --tile-highlight: rgba(255, 255, 255, 0.95);
+  --tile-shadow: rgba(60, 50, 30, 0.35);
+  --tile-free-glow: rgba(232, 200, 120, 0.6);
+  --tile-free-glow-soft: rgba(232, 200, 120, 0.3);
+  --tile-hover-glow: rgba(232, 200, 120, 0.9);
+  --tile-hover-glow-soft: rgba(232, 200, 120, 0.5);
+  --tile-hint-glow: rgba(232, 200, 120, 1);
+  --tile-hint-glow-soft: rgba(232, 200, 120, 0.6);
+}

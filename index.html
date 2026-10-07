@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a0f0a" />
+  <title>Маджонг</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/tiles.css" />
+  <link rel="stylesheet" href="css/themes.css" />
+</head>
+<body data-theme="traditional" data-screen="menu">
+
+  <!-- ============= Фоновые слои атмосферы ============= -->
+  <div class="atmosphere" aria-hidden="true">
+    <div class="atmosphere-gradient"></div>
+    <div class="atmosphere-pattern"></div>
+    <div class="atmosphere-vignette"></div>
+  </div>
+
+  <!-- ============= ГЛАВНОЕ МЕНЮ — дизайнерский вид ============= -->
+  <section id="screen-menu" class="screen" data-name="menu">
+
+    <!-- Вертикальные золотые кисточки по бокам -->
+    <div class="menu-side-decor menu-side-left" aria-hidden="true">
+      <div class="brush-line"></div>
+      <div class="brush-knot"></div>
+      <div class="brush-tassel"></div>
+    </div>
+    <div class="menu-side-decor menu-side-right" aria-hidden="true">
+      <div class="brush-line"></div>
+      <div class="brush-knot"></div>
+      <div class="brush-tassel"></div>
+    </div>
+
+    <!-- Декоративная китайская рамка по углам -->
+    <div class="menu-frame" aria-hidden="true">
+      <svg class="frame-corner frame-tl" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 30 L0 0 L30 0 M0 15 L15 15 L15 0 M5 25 L25 25 L25 5" stroke="currentColor" stroke-width="2" fill="none"/>
+        <circle cx="20" cy="20" r="3" fill="currentColor"/>
+        <path d="M30 30 L40 30 M30 30 L30 40" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+      </svg>
+      <svg class="frame-corner frame-tr" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M100 30 L100 0 L70 0 M100 15 L85 15 L85 0 M95 25 L75 25 L75 5" stroke="currentColor" stroke-width="2" fill="none"/>
+        <circle cx="80" cy="20" r="3" fill="currentColor"/>
+        <path d="M70 30 L60 30 M70 30 L70 40" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+      </svg>
+      <svg class="frame-corner frame-bl" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 70 L0 100 L30 100 M0 85 L15 85 L15 100 M5 75 L25 75 L25 95" stroke="currentColor" stroke-width="2" fill="none"/>
+        <circle cx="20" cy="80" r="3" fill="currentColor"/>
+        <path d="M30 70 L40 70 M30 70 L30 60" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+      </svg>
+      <svg class="frame-corner frame-br" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M100 70 L100 100 L70 100 M100 85 L85 85 L85 100 M95 75 L75 75 L75 95" stroke="currentColor" stroke-width="2" fill="none"/>
+        <circle cx="80" cy="80" r="3" fill="currentColor"/>
+        <path d="M70 70 L60 70 M70 70 L70 60" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+      </svg>
+    </div>
+
+    <!-- Декоративные облака-юнь на фоне -->
+    <svg class="menu-clouds menu-clouds-left" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <path d="M40 100 Q40 80 60 80 Q70 60 95 65 Q115 50 135 70 Q160 70 160 95 Q160 110 145 110 L60 110 Q40 110 40 100 Z"
+            fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>
+      <path d="M50 130 Q50 115 70 115 Q80 100 100 105 Q120 95 135 110 Q155 110 155 125 Q155 140 140 140 L70 140 Q50 140 50 130 Z"
+            fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.3"/>
+      <circle cx="100" cy="60" r="2" fill="currentColor" opacity="0.4"/>
+    </svg>
+    <svg class="menu-clouds menu-clouds-right" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <path d="M40 100 Q40 80 60 80 Q70 60 95 65 Q115 50 135 70 Q160 70 160 95 Q160 110 145 110 L60 110 Q40 110 40 100 Z"
+            fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>
+      <path d="M50 130 Q50 115 70 115 Q80 100 100 105 Q120 95 135 110 Q155 110 155 125 Q155 140 140 140 L70 140 Q50 140 50 130 Z"
+            fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.3"/>
+      <circle cx="100" cy="60" r="2" fill="currentColor" opacity="0.4"/>
+    </svg>
+
+    <!-- Падающие лепестки сакуры -->
+    <div class="petals-container" aria-hidden="true" id="petals-container"></div>
+
+    <div class="menu-inner">
+      <!-- Девиз сверху (вертикальный) -->
+      <div class="menu-top-motto" aria-hidden="true">
+        <span class="motto-char">和</span>
+        <span class="motto-char">平</span>
+        <span class="motto-char">喜</span>
+        <span class="motto-char">悅</span>
+      </div>
+
+      <!-- Большой декоративный иероглиф с орнаментом -->
+      <div class="menu-logo">
+        <div class="menu-logo-ornament" aria-hidden="true">
+          <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+            <!-- Внешний медальон -->
+            <circle cx="100" cy="100" r="92" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+            <circle cx="100" cy="100" r="86" fill="none" stroke="currentColor" stroke-width="2" opacity="0.55"/>
+            <circle cx="100" cy="100" r="78" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+            <!-- Декоративные дуги по 4 сторонам -->
+            <g opacity="0.5">
+              <path d="M100 8 Q120 20 130 50 Q115 30 100 28" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M100 8 Q80 20 70 50 Q85 30 100 28" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M100 192 Q120 180 130 150 Q115 170 100 172" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M100 192 Q80 180 70 150 Q85 170 100 172" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M8 100 Q20 80 50 70 Q30 85 28 100" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M8 100 Q20 120 50 130 Q30 115 28 100" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M192 100 Q180 80 150 70 Q170 85 172 100" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M192 100 Q180 120 150 130 Q170 115 172 100" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            </g>
+            <!-- 8 точек по сторонам света -->
+            <g opacity="0.7">
+              <circle cx="100" cy="14" r="2.5" fill="currentColor"/>
+              <circle cx="100" cy="186" r="2.5" fill="currentColor"/>
+              <circle cx="14" cy="100" r="2.5" fill="currentColor"/>
+              <circle cx="186" cy="100" r="2.5" fill="currentColor"/>
+              <circle cx="38" cy="38" r="2" fill="currentColor"/>
+              <circle cx="162" cy="38" r="2" fill="currentColor"/>
+              <circle cx="38" cy="162" r="2" fill="currentColor"/>
+              <circle cx="162" cy="162" r="2" fill="currentColor"/>
+            </g>
+          </svg>
+        </div>
+        <h1 class="title">
+          <span class="title-main">麻將</span>
+          <span class="title-sub">Маджонг</span>
+        </h1>
+        <!-- Красная императорская печать -->
+        <div class="menu-seal" aria-hidden="true">
+          <svg viewBox="0 0 60 60" preserveAspectRatio="xMidYMid meet">
+            <rect x="6" y="6" width="48" height="48" rx="3" fill="#c8202a" stroke="#7a1420" stroke-width="1"/>
+            <rect x="10" y="10" width="40" height="40" rx="2" fill="none" stroke="#fdf8ea" stroke-width="1" opacity="0.8"/>
+            <text x="30" y="38" text-anchor="middle" font-size="22" font-weight="900"
+                  fill="#fdf8ea" font-family="'Ma Shan Zheng', serif">福</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Декоративный разделитель с китайским орнаментом -->
+      <div class="menu-divider" aria-hidden="true">
+        <span class="divider-line"></span>
+        <svg class="divider-ornament" viewBox="0 0 80 24" preserveAspectRatio="xMidYMid meet">
+          <path d="M40 4 L44 12 L52 12 L46 18 L48 24 L40 20 L32 24 L34 18 L28 12 L36 12 Z" fill="currentColor"/>
+          <circle cx="12" cy="12" r="2.5" fill="currentColor" opacity="0.7"/>
+          <circle cx="68" cy="12" r="2.5" fill="currentColor" opacity="0.7"/>
+          <path d="M4 12 Q10 8 18 12" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          <path d="M62 12 Q70 8 76 12" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+        </svg>
+        <span class="divider-line"></span>
+      </div>
+
+      <div class="menu-buttons">
+        <button class="btn btn-primary" id="btn-continue" hidden>
+          <span class="btn-icon">▶</span>
+          <span class="btn-label">Продолжить</span>
+        </button>
+        <button class="btn" id="btn-classic">
+          <span class="btn-icon">★</span>
+          <span class="btn-label">Победа</span>
+          <span class="btn-hint">Выбрать раскладку</span>
+        </button>
+        <button class="btn" id="btn-endless">
+          <span class="btn-icon">∞</span>
+          <span class="btn-label">Бесконечный</span>
+          <span class="btn-hint">Играй сколько хочешь</span>
+        </button>
+        <button class="btn btn-ghost" id="btn-settings">
+          <span class="btn-icon">⚙</span>
+          <span class="btn-label">Настройки</span>
+        </button>
+      </div>
+
+      <div class="menu-stats">
+        <div class="stat">
+          <span class="stat-label">Сыграно</span>
+          <span class="stat-value" id="stat-played">0</span>
+        </div>
+        <div class="stat-separator" aria-hidden="true">❖</div>
+        <div class="stat">
+          <span class="stat-label">Побед</span>
+          <span class="stat-value" id="stat-won">0</span>
+        </div>
+        <div class="stat-separator" aria-hidden="true">❖</div>
+        <div class="stat">
+          <span class="stat-label">Лучший счёт</span>
+          <span class="stat-value" id="stat-best">0</span>
+        </div>
+      </div>
+
+      <!-- Подпись внизу -->
+      <div class="menu-footer" aria-hidden="true">
+        <span class="footer-decor">❖</span>
+        <span class="footer-text">静心博弈 · Тихая игра</span>
+        <span class="footer-decor">❖</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= ВЫБОР РАСКЛАДКИ ============= -->
+  <section id="screen-layouts" class="screen" data-name="layouts">
+    <header class="screen-header">
+      <button class="btn-icon-only" id="back-layouts" aria-label="Назад">←</button>
+      <h2 class="screen-title">Выберите раскладку</h2>
+    </header>
+    <div class="layouts-grid" id="layouts-grid"></div>
+  </section>
+
+  <!-- ============= ВЫБОР СЛОЖНОСТИ ============= -->
+  <section id="screen-difficulty" class="screen" data-name="difficulty">
+    <header class="screen-header">
+      <button class="btn-icon-only" id="back-difficulty" aria-label="Назад">←</button>
+      <h2 class="screen-title">Бесконечный режим</h2>
+    </header>
+    <div class="difficulty-list">
+      <button class="card difficulty-card" data-difficulty="easy">
+        <div class="card-icon">🌿</div>
+        <div class="card-body">
+          <div class="card-title">Спокойный</div>
+          <div class="card-desc">Маленькие раскладки, подсказки частые</div>
+        </div>
+      </button>
+      <button class="card difficulty-card" data-difficulty="normal">
+        <div class="card-icon">🎋</div>
+        <div class="card-body">
+          <div class="card-title">Классический</div>
+          <div class="card-desc">Знакомые раскладки, всё как обычно</div>
+        </div>
+      </button>
+      <button class="card difficulty-card" data-difficulty="hard">
+        <div class="card-icon">🍁</div>
+        <div class="card-body">
+          <div class="card-title">Большой</div>
+          <div class="card-desc">Большие раскладки, дольше игра</div>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============= ИГРОВОЙ ЭКРАН ============= -->
+  <section id="screen-game" class="screen" data-name="game">
+    <header class="game-header">
+      <button class="btn-icon-only" id="game-menu" aria-label="Меню">≡</button>
+      <div class="game-info">
+        <div class="info-block">
+          <span class="info-label">Счёт</span>
+          <span class="info-value" id="game-score">0</span>
+        </div>
+        <div class="info-block">
+          <span class="info-label">Пары</span>
+          <span class="info-value" id="game-pairs">0/0</span>
+        </div>
+        <div class="info-block">
+          <span class="info-label">Ходов</span>
+          <span class="info-value" id="game-moves">0</span>
+        </div>
+        <div class="info-block">
+          <span class="info-label">Время</span>
+          <span class="info-value" id="game-time">0:00</span>
+        </div>
+      </div>
+      <div class="game-actions">
+        <button class="btn-action" id="btn-hint" title="Подсказка (H)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.7V18a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3.3c1.8-1.2 3-3.3 3-5.7a7 7 0 0 0-7-7m-1 19h2v2h-2z"/></svg>
+        </button>
+        <button class="btn-action" id="btn-shuffle" title="Перемешать (S)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M14 20v-2h2.6l-3.2-3.2 1.4-1.4L18 16.6V14h2v6zM6.6 6H4V4h6v6H8V7.4l3.2 3.2-1.4 1.4L6.6 6m9.4 0V4h2v6h-6V8h2.6l-3.2-3.2 1.4-1.4z"/></svg>
+        </button>
+        <button class="btn-action" id="btn-undo" title="Отменить (Z)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12.5 8c-2.6 0-5 1-6.9 2.6L2 7v9h9l-3.6-3.6c1.4-1.2 3.2-2 5.1-2 3.9 0 7.1 3.2 7.1 7.1 0 .8-.1 1.5-.4 2.2 1.2-1.5 1.8-3.3 1.8-5.2C21 11.9 17.1 8 12.5 8"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="board-stage" id="board-stage">
+      <!-- Деревянная подложка-стол -->
+      <div class="board-table" id="board-table">
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+
+    <!-- Мини-меню во время игры -->
+    <div class="overlay" id="pause-overlay" hidden>
+      <div class="overlay-card">
+        <h3>Пауза</h3>
+        <button class="btn btn-primary" id="pause-resume">Продолжить</button>
+        <button class="btn" id="pause-restart">Начать заново</button>
+        <button class="btn" id="pause-new">Другая раскладка</button>
+        <button class="btn btn-ghost" id="pause-menu">В главное меню</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= ЭКРАН ПОБЕДЫ ============= -->
+  <section id="screen-win" class="screen" data-name="win">
+    <div class="win-inner">
+      <div class="win-glow"></div>
+      <div class="win-burst" id="win-burst"></div>
+      <h2 class="win-title">Победа!</h2>
+      <p class="win-subtitle" id="win-text">Вы собрали все пары!</p>
+      <div class="win-stats">
+        <div class="win-stat"><span>Счёт</span><strong id="win-score">0</strong></div>
+        <div class="win-stat"><span>Время</span><strong id="win-time">0:00</strong></div>
+        <div class="win-stat"><span>Подсказок</span><strong id="win-hints">0</strong></div>
+      </div>
+      <div class="win-actions">
+        <button class="btn btn-primary" id="win-again">Ещё раз</button>
+        <button class="btn" id="win-next" hidden>Следующая →</button>
+        <button class="btn btn-ghost" id="win-menu">В меню</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= НАСТРОЙКИ ============= -->
+  <section id="screen-settings" class="screen" data-name="settings">
+    <header class="screen-header">
+      <button class="btn-icon-only" id="back-settings" aria-label="Назад">←</button>
+      <h2 class="screen-title">Настройки</h2>
+    </header>
+    <div class="settings-list">
+
+      <div class="setting-group">
+        <h3 class="setting-title">Оформление</h3>
+        <div class="theme-picker">
+          <button class="theme-card" data-theme="traditional">
+            <div class="theme-preview theme-preview-traditional"></div>
+            <span class="theme-name">Традиционный</span>
+            <span class="theme-desc">Слоновая кость, дерево, золото</span>
+          </button>
+          <button class="theme-card" data-theme="jade">
+            <div class="theme-preview theme-preview-jade"></div>
+            <span class="theme-name">Нефрит</span>
+            <span class="theme-desc">Пастель, мрамор, мягкость</span>
+          </button>
+          <button class="theme-card" data-theme="porcelain">
+            <div class="theme-preview theme-preview-porcelain"></div>
+            <span class="theme-name">Фарфор</span>
+            <span class="theme-desc">Синь-бело, орнамент, золото</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <h3 class="setting-title">Размер фишек</h3>
+        <div class="size-picker">
+          <button class="size-card" data-size="small">Маленькие</button>
+          <button class="size-card active" data-size="medium">Средние</button>
+          <button class="size-card" data-size="large">Большие</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <h3 class="setting-title">Помощь</h3>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Подсветка доступных фишек</span>
+            <span class="setting-desc">Свечение вокруг фишек, которые можно убрать</span>
+          </span>
+          <input type="checkbox" id="setting-highlight" class="toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Автоподсказка</span>
+            <span class="setting-desc">Если 15 секунд бездействия — мигнёт доступная пара</span>
+          </span>
+          <input type="checkbox" id="setting-autohint" class="toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <h3 class="setting-title">Звук</h3>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Звук клика</span>
+            <span class="setting-desc">Мягкий звук при выборе фишки</span>
+          </span>
+          <input type="checkbox" id="setting-sound" class="toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Звук победы</span>
+            <span class="setting-desc">Мелодия при завершении раскладки</span>
+          </span>
+          <input type="checkbox" id="setting-win-sound" class="toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+      </div>
+
+      <div class="setting-group danger">
+        <h3 class="setting-title">Сброс</h3>
+        <button class="btn btn-ghost" id="setting-reset-stats">Сбросить статистику</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Toast (всплывающие сообщения) -->
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="js/tileset.js"></script>
+  <script src="js/layouts.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sw-register.js"></script>
+</body>
+</html>
