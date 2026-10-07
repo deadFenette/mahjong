@@ -3,7 +3,7 @@
    Кэшируем все файлы при первой загрузке
    ============================================================ */
 
-const CACHE_NAME = 'mahjong-v9-menu';
+const CACHE_NAME = 'mahjong-v10-animations';
 const ASSETS = [
   './',
   './index.html',

@@ -14,6 +14,17 @@
    Чистая математика (computeFit / tilePosition / zIndexOf /
    clampTransparency / blockedAlphaFor) покрыта тестами
    (tests/render-math.test.js, tests/appearance.test.js).
+
+   v8 (анимации):
+   1. playDealAnimation — каскадная раздача: фишки падают
+      на доску волной (задержка от координат — чистая
+      функция dealDelayFor, покрыта тестами).
+   2. animateRemove — парные фишки ПРИТЯГИВАЮТСЯ друг
+      к другу (вектор сближения — чистая функция
+      flyVectorFor, покрыта тестами) и растворяются,
+      а в точке матча вспыхивают золотые искры.
+   3. spawnScoreFloat — всплывающий «+N» над собранной парой.
+   4. pulseTable — стол «вздрагивает» при перемешивании.
    ============================================================ */
 
 const Render = (function () {
@@ -50,6 +61,14 @@ const Render = (function () {
   const TRANSPARENCY_MIN = 0;
   const TRANSPARENCY_MAX = 50;
 
+  // ---------- Анимации (v8) ----------
+  // Задержка каскадной раздачи: волна идёт по доске слева-направо и
+  // снизу-вверх, верхние слои приезжают последними.
+  const DEAL_STEP_XY = 14;  // мс на каждый шаг по сетке (x + y)
+  const DEAL_STEP_Z = 55;   // мс на каждый слой
+  const DEAL_MAX_DELAY = 750; // потолок задержки — не заставляем ждать
+  let dealCleanupTimer = null;
+
   // Чистая функция: привести процент прозрачности к допустимому диапазону.
   // Строки из localStorage («25»), мусор («abc», NaN, undefined) — всё терпимо.
   function clampTransparency(pct) {
@@ -71,6 +90,61 @@ const Render = (function () {
       boardEl.style.setProperty('--tile-blocked-alpha', String(blockedAlphaFor(clamped)));
     }
     return clamped;
+  }
+
+  // ============================================================
+  //  ЧИСТАЯ МАТЕМАТИКА АНИМАЦИЙ (v8 — покрыта тестами)
+  // ============================================================
+
+  // ---------- Задержка каскадной раздачи для одной фишки ----------
+  // Чем правее/ниже/выше фишка — тем позже она приземляется.
+  // Мусор в координатах трактуется как 0 (никогда не NaN).
+  function dealDelayFor(tile, opts) {
+    const o = opts || {};
+    const stepXY = o.stepXY !== undefined ? o.stepXY : DEAL_STEP_XY;
+    const stepZ = o.stepZ !== undefined ? o.stepZ : DEAL_STEP_Z;
+    const maxDelay = o.maxDelay !== undefined ? o.maxDelay : DEAL_MAX_DELAY;
+
+    const num = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const tx = num(tile && tile.x);
+    const ty = num(tile && tile.y);
+    const tz = num(tile && tile.z);
+
+    const raw = (tx + ty) * stepXY + tz * stepZ;
+    return Math.max(0, Math.min(Math.round(raw), maxDelay));
+  }
+
+  // ---------- Вектор сближения пары при матче ----------
+  // Каждая фишка подтягивается к другой на pull-долю расстояния,
+  // но не дальше maxShift px (иначе близнецы-соседи слипаются).
+  // Возвращает симметричные смещения: b = -a.
+  function flyVectorFor(posA, posB, opts) {
+    const o = opts || {};
+    const pull = o.pull !== undefined ? o.pull : 0.22;
+    const maxShift = o.maxShift !== undefined ? o.maxShift : Infinity;
+
+    const ax = Number(posA && posA.left) || 0;
+    const ay = Number(posA && posA.top) || 0;
+    const bx = Number(posB && posB.left) || 0;
+    const by = Number(posB && posB.top) || 0;
+
+    let dx = (bx - ax) * pull;
+    let dy = (by - ay) * pull;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > maxShift && dist > 0) {
+      const k = maxShift / dist;
+      dx *= k;
+      dy *= k;
+    }
+    dx = Math.round(dx);
+    dy = Math.round(dy);
+    return {
+      a: { dx, dy },
+      b: { dx: -dx, dy: -dy },
+    };
   }
 
   function sizeScaleFor(setting) {
@@ -199,6 +273,8 @@ const Render = (function () {
     const depth = Math.max(2, Math.min(12, Math.round(fit.h * 0.05)));
     const vars = {
       '--tile-depth': depth + 'px',
+      '--tile-w': fit.w + 'px',   // v8: для масштаба искр и «+N»
+      '--tile-h': fit.h + 'px',   // v8: дальность падения в tile-deal
       '--tile-radius': Math.max(4, Math.min(16, Math.round(fit.w * 0.11))) + 'px',
       '--tile-face-pad': Math.max(4, Math.round(fit.w * 0.08)) + 'px',
       '--tile-inner-inset': Math.max(3, Math.round(fit.w * 0.07)) + 'px',
@@ -253,6 +329,12 @@ const Render = (function () {
     if (tile.removed) {
       el.classList.add('removed');
     }
+
+    // v8: после каскадной раздачи класс .enter снимается —
+    // стили фишки возвращаются к естественным (hover, прозрачность)
+    el.addEventListener('animationend', e => {
+      if (e.animationName === 'tile-deal') el.classList.remove('enter');
+    });
 
     el.addEventListener('click', () => {
       App.onTileClick(tile);
@@ -323,18 +405,140 @@ const Render = (function () {
   }
 
   // ---------- Анимация исчезновения ----------
-  // .removed (display:none) ставим ПОСЛЕ конца 400-мс анимации,
+  // .removed (display:none) ставим ПОСЛЕ конца 450-мс анимации,
   // а не через 50 мс — раньше фишки «выскакивали» рывком.
+  // v8: пара сначала ПРИТЯГИВАЕТСЯ друг к другу (tile-vanish читает
+  // --fly-dx/--fly-dy), в точке матча вспыхивают золотые искры.
   function animateRemove(tiles) {
-    tiles.forEach(tile => {
+    const arr = Array.isArray(tiles) ? tiles : [];
+    const pair = arr.slice(0, 2);
+
+    // Вектор сближения — только если пара из двух фишек
+    if (pair.length === 2) {
+      const elA = tileEls.get(pair[0]);
+      const elB = tileEls.get(pair[1]);
+      if (elA && elB) {
+        const vec = flyVectorFor(
+          tilePosition(pair[0], { w: tileSize.w, h: tileSize.h, gap, zLift }),
+          tilePosition(pair[1], { w: tileSize.w, h: tileSize.h, gap, zLift }),
+          { pull: 0.22, maxShift: tileSize.w * 0.35 }
+        );
+        elA.style.setProperty('--fly-dx', vec.a.dx + 'px');
+        elA.style.setProperty('--fly-dy', vec.a.dy + 'px');
+        elB.style.setProperty('--fly-dx', vec.b.dx + 'px');
+        elB.style.setProperty('--fly-dy', vec.b.dy + 'px');
+        // Искры в середине пары
+        spawnSparks(midpointOf(pair[0], pair[1]));
+      }
+    }
+
+    arr.forEach(tile => {
       const el = tileEls.get(tile);
       if (!el) return;
       el.classList.add('removing');
       setTimeout(() => {
         el.classList.add('removed');
         el.classList.remove('removing');
-      }, 430);
+      }, 480);
     });
+  }
+
+  // ---------- Середина между двумя фишками (в координатах доски) ----------
+  function midpointOf(tileA, tileB) {
+    const posA = tilePosition(tileA, { w: tileSize.w, h: tileSize.h, gap, zLift });
+    const posB = tilePosition(tileB, { w: tileSize.w, h: tileSize.h, gap, zLift });
+    return {
+      x: (posA.left + posB.left) / 2 + tileSize.w / 2,
+      y: (posA.top + posB.top) / 2 + tileSize.h / 2,
+    };
+  }
+
+  // ---------- Золотые искры в точке матча (v8) ----------
+  // Небольшой управляемый салют: 10–14 частиц разлетаются
+  // из точки и гаснут. Элементы удаляются сами через 950 мс.
+  function spawnSparks(point, count) {
+    if (!boardEl || !point) return;
+    const n = Math.max(1, Math.min(24, count || 12));
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement('span');
+      s.className = 'match-spark';
+      const angle = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.9;
+      const dist = 14 + Math.random() * 46;
+      s.style.left = point.x + 'px';
+      s.style.top = point.y + 'px';
+      s.style.setProperty('--sx', Math.round(Math.cos(angle) * dist) + 'px');
+      s.style.setProperty('--sy', Math.round(Math.sin(angle) * dist) + 'px');
+      s.style.setProperty('--s-dur', (0.5 + Math.random() * 0.35).toFixed(2) + 's');
+      s.style.setProperty('--s-delay', (Math.random() * 0.12).toFixed(2) + 's');
+      const size = 5 + Math.random() * 5;
+      s.style.width = size + 'px';
+      s.style.height = size + 'px';
+      boardEl.appendChild(s);
+      setTimeout(() => s.remove(), 950);
+    }
+  }
+
+  // ---------- Всплывающий «+N» над собранной парой (v8) ----------
+  function spawnScoreFloat(text, tileA, tileB) {
+    if (!boardEl || !tileA) return;
+    const point = tileB
+      ? midpointOf(tileA, tileB)
+      : (() => {
+          const p = tilePosition(tileA, { w: tileSize.w, h: tileSize.h, gap, zLift });
+          return { x: p.left + tileSize.w / 2, y: p.top + tileSize.h / 2 };
+        })();
+    const el = document.createElement('div');
+    el.className = 'score-float';
+    el.textContent = text;
+    el.style.left = point.x + 'px';
+    el.style.top = point.y + 'px';
+    boardEl.appendChild(el);
+    setTimeout(() => el.remove(), 1100);
+  }
+
+  // ---------- Каскадная раздача фишек (v8) ----------
+  // Вызывается после renderFull на старте партии, перемешивании
+  // и отмене хода. opts.fast — укороченный вариант (для undo).
+  function playDealAnimation(opts) {
+    const state = Game.getState();
+    if (!boardEl || !state) return;
+    const fast = !!(opts && opts.fast);
+
+    let maxDelay = 0;
+    state.tiles.forEach(tile => {
+      if (tile.removed) return;
+      const el = tileEls.get(tile);
+      if (!el) return;
+      const delay = fast
+        ? dealDelayFor(tile, { stepXY: 5, stepZ: 22, maxDelay: 240 })
+        : dealDelayFor(tile);
+      const rot = (Math.random() * 2 - 1) * (fast ? 2 : 3.5);
+      const hadEnter = el.classList.contains('enter');
+      if (hadEnter) {
+        // Перезапуск уже идущей анимации — нужен reflow
+        el.classList.remove('enter');
+        void el.offsetWidth;
+      }
+      el.style.setProperty('--deal-delay', delay + 'ms');
+      el.style.setProperty('--deal-rot', rot.toFixed(2) + 'deg');
+      el.classList.add('enter');
+      if (delay > maxDelay) maxDelay = delay;
+    });
+
+    // Страховочная очистка (если animationend не сработал)
+    clearTimeout(dealCleanupTimer);
+    dealCleanupTimer = setTimeout(() => {
+      tileEls.forEach(el => el.classList.remove('enter'));
+    }, maxDelay + 900);
+  }
+
+  // ---------- Стол «вздрагивает» при перемешивании (v8) ----------
+  function pulseTable() {
+    if (!tableEl) return;
+    tableEl.classList.remove('table-shake');
+    void tableEl.offsetWidth; // перезапуск анимации
+    tableEl.classList.add('table-shake');
+    setTimeout(() => tableEl.classList.remove('table-shake'), 600);
   }
 
   // ---------- Подсветить все свободные ----------
@@ -390,6 +594,16 @@ const Render = (function () {
     blockedAlphaFor,
     TRANSPARENCY_MIN,
     TRANSPARENCY_MAX,
+    // анимации (v8)
+    playDealAnimation,
+    spawnScoreFloat,
+    spawnSparks,
+    pulseTable,
+    dealDelayFor,
+    flyVectorFor,
+    DEAL_STEP_XY,
+    DEAL_STEP_Z,
+    DEAL_MAX_DELAY,
     // чистые функции — для тестов
     computeFit,
     tilePosition,

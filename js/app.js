@@ -40,11 +40,29 @@ const App = (function () {
     }
   }
 
+  // ---------- Пульс значения при изменении (v8) ----------
+  // Счёт/пары/ходы в шапке и статистика в меню «подпрыгивают»,
+  // когда меняются — глаз сразу видит, ЧТО именно обновилось.
+  function bumpValue(el) {
+    if (!el) return;
+    el.classList.remove('bump');
+    void el.offsetWidth; // перезапуск анимации
+    el.classList.add('bump');
+  }
+  function setTextBumped(el, value) {
+    if (!el) return;
+    const text = String(value);
+    if (el.textContent !== text) {
+      el.textContent = text;
+      bumpValue(el);
+    }
+  }
+
   function updateMenuStats() {
     const stats = Storage.getStats();
-    document.getElementById('stat-played').textContent = stats.played;
-    document.getElementById('stat-won').textContent = stats.won;
-    document.getElementById('stat-best').textContent = stats.bestScore;
+    setTextBumped(document.getElementById('stat-played'), stats.played);
+    setTextBumped(document.getElementById('stat-won'), stats.won);
+    setTextBumped(document.getElementById('stat-best'), stats.bestScore);
     // Кнопка «Продолжить» видна только если есть сохранённая игра
     document.getElementById('btn-continue').hidden = !Storage.hasSavedGame();
   }
@@ -56,6 +74,7 @@ const App = (function () {
     Game.newGame(layout);
     Render.fitBoard(layout);
     Render.renderFull();
+    Render.playDealAnimation(); // v8: каскадная раздача
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     showScreen('game');
@@ -79,6 +98,7 @@ const App = (function () {
     state.endlessLevel = roundIdx;
     Render.fitBoard(layout);
     Render.renderFull();
+    Render.playDealAnimation(); // v8: каскадная раздача
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     showScreen('game');
@@ -118,6 +138,10 @@ const App = (function () {
       const last = st.history[st.history.length - 1];
       Render.animateRemove([last.tile1, last.tile2]);
       Render.setSelected(null);
+      // v8: над собранной парой всплывает «+N»
+      if (last.scoreDelta > 0) {
+        Render.spawnScoreFloat('+' + last.scoreDelta, last.tile1, last.tile2);
+      }
       updateGameInfo();
 
       // Подсветка могла поменяться
@@ -136,6 +160,8 @@ const App = (function () {
         setTimeout(() => {
           Game.shuffleBoard(false);
           Render.renderFull();
+          Render.playDealAnimation(); // v8
+          Render.pulseTable();        // v8: стол вздрагивает
           Render.highlightFree(Storage.getSetting('highlight', true));
           updateGameInfo();
           Audio2.shuffleSound();
@@ -188,18 +214,24 @@ const App = (function () {
 
   function launchWinBurst() {
     const burst = document.getElementById('win-burst');
+    if (!burst) return;
     burst.innerHTML = '';
-    for (let i = 0; i < 24; i++) {
+    // v8: 42 частицы — кружки и квадратные «мини-фишки»,
+    // каждый со своим размером, поворотом, задержкой и длительностью
+    const colors = ['#c8202a', '#1f7a3a', '#e8a83a', '#3a6a8a', '#d63384', '#f0e6c8', '#f4d27a'];
+    for (let i = 0; i < 42; i++) {
       const p = document.createElement('span');
-      p.className = 'burst-particle';
-      const angle = (i / 24) * Math.PI * 2;
-      const dist = 120 + Math.random() * 60;
-      const tx = Math.cos(angle) * dist;
-      const ty = Math.sin(angle) * dist;
-      p.style.setProperty('--tx', tx + 'px');
-      p.style.setProperty('--ty', ty + 'px');
-      p.style.setProperty('--delay', (i * 0.02) + 's');
-      const colors = ['#c8202a', '#1f7a3a', '#e8a83a', '#3a6a8a', '#d63384', '#f0e6c8'];
+      p.className = 'burst-particle' + (i % 3 === 0 ? ' burst-square' : '');
+      const angle = (i / 42) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
+      const dist = 110 + Math.random() * 170;
+      p.style.setProperty('--tx', (Math.cos(angle) * dist) + 'px');
+      p.style.setProperty('--ty', (Math.sin(angle) * dist) + 'px');
+      p.style.setProperty('--rot', (Math.random() * 360 - 180).toFixed(0) + 'deg');
+      p.style.setProperty('--delay', (i * 0.018).toFixed(3) + 's');
+      p.style.setProperty('--dur', (1.2 + Math.random() * 0.9).toFixed(2) + 's');
+      const size = 8 + Math.random() * 8;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
       p.style.background = colors[i % colors.length];
       burst.appendChild(p);
     }
@@ -223,6 +255,8 @@ const App = (function () {
   function actShuffle() {
     Game.shuffleBoard(true);
     Render.renderFull();
+    Render.playDealAnimation(); // v8: фишки пересыпаются волной
+    Render.pulseTable();        // v8: стол вздрагивает
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     Audio2.shuffleSound();
@@ -233,6 +267,7 @@ const App = (function () {
   function actUndo() {
     if (Game.undo()) {
       Render.renderFull();
+      Render.playDealAnimation({ fast: true }); // v8: фишки быстро возвращаются
       Render.highlightFree(Storage.getSetting('highlight', true));
       updateGameInfo();
       Audio2.click();
@@ -286,12 +321,12 @@ const App = (function () {
   function updateGameInfo() {
     const state = Game.getState();
     if (!state) return;
-    document.getElementById('game-score').textContent = state.score;
-    document.getElementById('game-pairs').textContent =
-      `${state.pairsFound}/${state.totalPairs}`;
+    // v8: изменение значения подсвечивается пульсом (bump)
+    setTextBumped(document.getElementById('game-score'), state.score);
+    setTextBumped(document.getElementById('game-pairs'),
+      `${state.pairsFound}/${state.totalPairs}`);
     // Счётчик ходов: сколько пар ещё можно собрать прямо сейчас
-    const moves = countAvailableMoves();
-    document.getElementById('game-moves').textContent = moves;
+    setTextBumped(document.getElementById('game-moves'), countAvailableMoves());
   }
 
   // ---------- Сколько пар можно собрать прямо сейчас ----------
@@ -368,6 +403,7 @@ const App = (function () {
 
     Render.fitBoard(layout);
     Render.renderFull();
+    Render.playDealAnimation(); // v8: каскадная раздача при продолжении
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     showScreen('game');
@@ -380,9 +416,10 @@ const App = (function () {
   function renderLayoutsGrid() {
     const grid = document.getElementById('layouts-grid');
     grid.innerHTML = '';
-    Layouts.all.forEach(layout => {
+    Layouts.all.forEach((layout, index) => {
       const card = document.createElement('button');
       card.className = 'layout-card';
+      card.style.setProperty('--i', index); // v8: каскад появления карточек
       card.innerHTML = `
         <div class="layout-preview" data-layout="${layout.id}"></div>
         <div class="layout-info">
@@ -444,10 +481,19 @@ const App = (function () {
   let toastTimer = null;
   function toast(msg) {
     const el = document.getElementById('toast');
+    if (!el) return;
     el.textContent = msg;
+    el.classList.remove('toast-out'); // v8: перезапуск, если тост уже уходит
     el.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { el.hidden = true; }, 2500);
+    toastTimer = setTimeout(() => {
+      // v8: мягкий уход вместо мгновенного скрытия
+      el.classList.add('toast-out');
+      setTimeout(() => {
+        el.hidden = true;
+        el.classList.remove('toast-out');
+      }, 280);
+    }, 2500);
   }
 
   // ---------- Настройки ----------
@@ -601,6 +647,7 @@ const App = (function () {
         Game.newGame(state.layout);
         Render.fitBoard(state.layout);
         Render.renderFull();
+        Render.playDealAnimation(); // v8
         Render.highlightFree(Storage.getSetting('highlight', true));
         updateGameInfo();
         startTimer();
@@ -626,6 +673,7 @@ const App = (function () {
         Game.newGame(state.layout);
         Render.fitBoard(state.layout);
         Render.renderFull();
+        Render.playDealAnimation(); // v8
         Render.highlightFree(Storage.getSetting('highlight', true));
         updateGameInfo();
         showScreen('game');

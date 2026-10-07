@@ -59,6 +59,10 @@ body {
 
 /* ============================================================
    ЭКРАНЫ — каждый с непрозрачным фоном, наложений нет
+   v8: красивая смена экранов — вход с лёгким подъёмом.
+   ВАЖНО: fill-mode backwards, а НЕ both — иначе после
+   анимации навсегда останется transform, и экран станет
+   containing block для position:fixed детей (пауза-оверлей).
    ============================================================ */
 .screen {
   position: fixed;
@@ -74,6 +78,11 @@ body {
 .screen.active {
   display: flex;
   opacity: 1;
+  animation: screen-in 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.996); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 /* Чтобы при первом показе не было рывка */
 body[data-screen="menu"] #screen-menu,
@@ -420,6 +429,23 @@ body[data-screen="settings"] #screen-settings {
     inset 0 0 0 3px rgba(180, 150, 90, 0.16),
     inset 0 2px 6px rgba(255, 255, 255, 0.9);
   overflow: hidden;
+  /* v8: отклик на наведение — эмблема оживает */
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+/* v8: парение фишки не трогаем (анимация на .mtile), отклик —
+   на лицевой стороне и свечении (filter не анимируется keyframes) */
+.mtile { transition: filter 0.3s ease; }
+.mtile:hover {
+  filter:
+    drop-shadow(0 16px 22px var(--shadow-medium))
+    drop-shadow(0 0 16px var(--accent-gold-soft));
+}
+.mtile:hover .mtile-face {
+  transform: scale(1.07) translateY(-3px);
+  box-shadow:
+    inset 0 0 0 3px rgba(180, 150, 90, 0.3),
+    inset 0 2px 6px rgba(255, 255, 255, 0.95),
+    0 6px 18px var(--accent-gold-soft);
 }
 .mtile-face::after {       /* глянцевый блик */
   content: '';
@@ -460,6 +486,13 @@ body[data-screen="settings"] #screen-settings {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
   opacity: 0.7;
+  /* v8: линии разделителя «прорисовываются» из центра */
+  transform-origin: center;
+  animation: line-grow 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) 0.2s backwards;
+}
+@keyframes line-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 .divider-ornament {
   width: 80px;
@@ -526,6 +559,21 @@ body[data-screen="settings"] #screen-settings {
   color: var(--accent-gold);
   font-variant-numeric: tabular-nums;
   font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+}
+
+/* v8: пульс значения, когда оно изменилось (ставит App.bumpValue) */
+.info-value.bump,
+.stat-value.bump {
+  animation: value-bump 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes value-bump {
+  0%   { transform: scale(1); }
+  35%  {
+    transform: scale(1.22);
+    color: var(--accent-gold-bright);
+    text-shadow: 0 0 12px var(--accent-gold-glow);
+  }
+  100% { transform: scale(1); }
 }
 
 /* Подпись внизу */
@@ -763,6 +811,14 @@ body[data-screen="settings"] #screen-settings {
   color: var(--text-main);
   position: relative;
   overflow: hidden;
+  /* v8: каскадное появление карточек (--i ставит App.renderLayoutsGrid).
+     fill-mode backwards — чтобы после анимации hover-transform работал */
+  animation: card-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .layout-card:hover {
   border-color: var(--accent-gold);
@@ -841,6 +897,9 @@ body[data-screen="settings"] #screen-settings {
   text-align: left;
   font-family: inherit;
   color: var(--text-main);
+  /* v8: каскад появления карточек сложности (--i в разметке) */
+  animation: card-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms + 0.05s);
 }
 .card:hover {
   border-color: var(--accent-gold);
@@ -942,6 +1001,16 @@ body[data-screen="settings"] #screen-settings {
     0 4px 12px var(--shadow-medium);
   border: 1px solid var(--table-border);
 }
+/* v8: стол «вздрагивает» при перемешивании (класс ставит Render.pulseTable) */
+.board-table.table-shake {
+  animation: table-shake 0.55s ease;
+}
+@keyframes table-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20%  { transform: translate(-3px, 1px) rotate(-0.35deg); }
+  45%  { transform: translate(3px, -1px) rotate(0.3deg); }
+  70%  { transform: translate(-2px, 1px) rotate(-0.18deg); }
+}
 .board {
   position: relative;
   margin: 0 auto;
@@ -979,6 +1048,12 @@ body[data-screen="settings"] #screen-settings {
   gap: 12px;
   min-width: 300px;
   box-shadow: 0 24px 60px var(--shadow-strong);
+  /* v8: карточка паузы выпрыгивает, а не просто проявляется */
+  animation: card-pop 0.32s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+@keyframes card-pop {
+  from { opacity: 0; transform: translateY(14px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .overlay-card h3 {
   text-align: center;
@@ -1034,14 +1109,20 @@ body[data-screen="settings"] #screen-settings {
   border-radius: 50%;
   left: -7px;
   top: -7px;
-  animation: burst-fly 1.5s ease-out forwards;
+  /* v8: длительность/поворот/задержка индивидуальны (--dur/--rot/--delay) */
+  animation: burst-fly var(--dur, 1.5s) cubic-bezier(0.15, 0.6, 0.4, 1) forwards;
   animation-delay: var(--delay);
   opacity: 0;
 }
+/* v8: часть частиц — квадратные «мини-фишки» вместо кружков */
+.burst-square { border-radius: 2px; }
 @keyframes burst-fly {
-  0% { transform: translate(0, 0) scale(0); opacity: 1; }
-  50% { opacity: 1; }
-  100% { transform: translate(var(--tx), var(--ty)) scale(1); opacity: 0; }
+  0%   { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 1; }
+  50%  { opacity: 1; }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(1) rotate(var(--rot, 0deg));
+    opacity: 0;
+  }
 }
 .win-title {
   font-size: clamp(56px, 9vw, 110px);
@@ -1056,6 +1137,12 @@ body[data-screen="settings"] #screen-settings {
   position: relative;
   z-index: 2;
   letter-spacing: 0.05em;
+  /* v8: заголовок эффектно вырастает с лёгким наклоном */
+  animation: win-pop 0.65s cubic-bezier(0.34, 1.4, 0.64, 1) 0.08s backwards;
+}
+@keyframes win-pop {
+  from { opacity: 0; transform: scale(0.45) rotate(-5deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 .win-subtitle {
   font-size: 18px;
@@ -1063,6 +1150,8 @@ body[data-screen="settings"] #screen-settings {
   margin-bottom: 36px;
   position: relative;
   z-index: 2;
+  /* v8: каскад появления блока победы */
+  animation: win-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) 0.3s backwards;
 }
 .win-stats {
   display: flex;
@@ -1071,6 +1160,7 @@ body[data-screen="settings"] #screen-settings {
   margin-bottom: 36px;
   position: relative;
   z-index: 2;
+  animation: win-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) 0.45s backwards;
 }
 .win-stat {
   display: flex;
@@ -1096,6 +1186,11 @@ body[data-screen="settings"] #screen-settings {
   flex-wrap: wrap;
   position: relative;
   z-index: 2;
+  animation: win-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) 0.6s backwards;
+}
+@keyframes win-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================================
@@ -1363,6 +1458,14 @@ body[data-screen="settings"] #screen-settings {
 @keyframes toast-in {
   from { opacity: 0; transform: translate(-50%, 20px); }
   to { opacity: 1; transform: translate(-50%, 0); }
+}
+/* v8: мягкий уход тоста (класс ставит App.toast перед скрытием) */
+.toast.toast-out {
+  animation: toast-out 0.28s ease forwards;
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to   { opacity: 0; transform: translate(-50%, 14px); }
 }
 
 /* ============================================================

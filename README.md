@@ -7,6 +7,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 
 - **8 layouts** — Pyramid, Turtle, Cross, Wall, Boat, Butterfly, Heart, Spider
 - **144 canonical tiles** — dots, bamboo, characters, winds, dragons, flowers, seasons
+- **Polished animations** — cascading tile deal, matched pairs attract and dissolve with a golden spark burst, floating score popups, value-change pulses, staggered menu/card entrances, celebratory win screen
 - **Two modes** — Classic (pick a layout, clear it, win) and Endless (layouts chain one after another, score accumulates)
 - **3 themes** — Traditional (ivory, dark wood, gold), Jade (pastel marble), Porcelain (vintage blue and gold)
 - **Hint, undo, shuffle** — no penalties in Endless mode; dead-end positions are reshuffled automatically
@@ -36,7 +37,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 node tests/run.js
 ```
 
-288 dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, scaling math, storage, and appearance settings. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
+305 dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, scaling math, animation math, storage, and appearance settings. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
 
 ## Project structure
 
