@@ -8,11 +8,12 @@
    вырастают до максимума, который влезает в экран (режим
    «Максимальные» — для слабовидящих).
 
-   Все пропорции (зазор, подъём слоёв, толщина фишки, отступы
-   стола) масштабируются вместе с размером фишки.
-
-   Чистая математика вынесена в computeFit / tilePosition /
-   zIndexOf — она покрыта тестами (tests/render-math.test.js).
+   v6: прозрачность закрытых фишек настраивается (слайдер
+   «Прозрачность фишек», 0–50%). По умолчанию 0% — фишки
+   плотные и больше не просвечивают друг сквозь друга.
+   Чистая математика (computeFit / tilePosition / zIndexOf /
+   clampTransparency / blockedAlphaFor) покрыта тестами
+   (tests/render-math.test.js, tests/appearance.test.js).
    ============================================================ */
 
 const Render = (function () {
@@ -42,6 +43,35 @@ const Render = (function () {
   // 'large' — доска занимает ВСЁ место (максимально возможные фишки),
   // и никогда не вылезает за экран: скролла и обрезки нет.
   const SIZE_SCALES = { small: 0.7, medium: 0.85, large: 1.0 };
+
+  // ---------- Прозрачность закрытых фишек (v6) ----------
+  // 0% — фишки плотные (по умолчанию: ничего не просвечивает сквозь слои,
+  // важно для слабовидящих). До 50% — «стеклянные» закрытые фишки.
+  const TRANSPARENCY_MIN = 0;
+  const TRANSPARENCY_MAX = 50;
+
+  // Чистая функция: привести процент прозрачности к допустимому диапазону.
+  // Строки из localStorage («25»), мусор («abc», NaN, undefined) — всё терпимо.
+  function clampTransparency(pct) {
+    const n = Math.round(Number(pct));
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(TRANSPARENCY_MIN, Math.min(TRANSPARENCY_MAX, n));
+  }
+
+  // Чистая функция: процент → alpha элемента закрытой фишки.
+  // 0% → 1 (непрозрачно), 50% → 0.5.
+  function blockedAlphaFor(pct) {
+    return 1 - clampTransparency(pct) / 100;
+  }
+
+  // Применить прозрачность к доске (CSS-переменная — её читают .tile:not(.free))
+  function setTileTransparency(pct) {
+    const clamped = clampTransparency(pct);
+    if (boardEl) {
+      boardEl.style.setProperty('--tile-blocked-alpha', String(blockedAlphaFor(clamped)));
+    }
+    return clamped;
+  }
 
   function sizeScaleFor(setting) {
     return SIZE_SCALES[setting] !== undefined ? SIZE_SCALES[setting] : 1.0;
@@ -354,6 +384,12 @@ const Render = (function () {
     getTileSize,
     getGap,
     getZLift,
+    // прозрачность закрытых фишек (v6)
+    setTileTransparency,
+    clampTransparency,
+    blockedAlphaFor,
+    TRANSPARENCY_MIN,
+    TRANSPARENCY_MAX,
     // чистые функции — для тестов
     computeFit,
     tilePosition,

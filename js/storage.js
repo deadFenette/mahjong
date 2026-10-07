@@ -14,6 +14,7 @@ const Storage = (function () {
     highlight: true,
     autohint: false,   // ← OFF по умолчанию (пользователь просил отключаемой)
     tileSize: 'large', // «Максимальные» — по умолчанию, для слабовидящих
+    tileTransparency: 0, // v6: 0% — фишки плотные, ничего не просвечивает (для слабовидящих важно)
   };
 
   function getSetting(key, fallback) {

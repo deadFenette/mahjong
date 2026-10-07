@@ -470,9 +470,31 @@ const App = (function () {
     }
   }
 
+  // ---------- Прозрачность фишек (v6) ----------
+  // Слайдер в настройках: 0% — фишки плотные (ничего не просвечивает),
+  // до 50% — закрытые фишки «стеклянные». Пишется в Storage и применяется
+  // через CSS-переменную на доске — мгновенно, даже прямо посреди партии.
+  function applyTileTransparency(pct, opts = {}) {
+    const clamped = Render.setTileTransparency(pct);
+    if (opts.persist !== false) {
+      Storage.setSetting('tileTransparency', clamped);
+    }
+    const out = document.getElementById('setting-tile-transparency-out');
+    const slider = document.getElementById('setting-tile-transparency');
+    if (out) out.textContent = clamped + '%';
+    if (slider) {
+      slider.value = String(clamped);
+      // Заливка трека слайдера до текущего значения
+      const max = Render.TRANSPARENCY_MAX || 50;
+      slider.style.setProperty('--range-fill', (clamped / max * 100) + '%');
+    }
+  }
+
   function loadSettings() {
     applyTheme(Storage.getSetting('theme', 'traditional'));
     applyTileSize(Storage.getSetting('tileSize', 'large'));
+    // Прозрачность по умолчанию 0% — фишки плотные (регрессия v5: было 0.88)
+    applyTileTransparency(Storage.getSetting('tileTransparency', 0), { persist: false });
     document.getElementById('setting-sound').checked = Storage.getSetting('sound', true);
     document.getElementById('setting-win-sound').checked = Storage.getSetting('winSound', true);
     document.getElementById('setting-highlight').checked = Storage.getSetting('highlight', true);
@@ -642,6 +664,14 @@ const App = (function () {
     document.querySelectorAll('.size-card').forEach(c => {
       c.addEventListener('click', () => applyTileSize(c.dataset.size));
     });
+
+    // Прозрачность фишек — живой отклик на движение слайдера
+    const transparencySlider = document.getElementById('setting-tile-transparency');
+    if (transparencySlider) {
+      transparencySlider.addEventListener('input', e => {
+        applyTileTransparency(Number(e.target.value));
+      });
+    }
 
     // Звук
     document.getElementById('setting-sound').addEventListener('change', e => {

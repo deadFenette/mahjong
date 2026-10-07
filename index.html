@@ -357,6 +357,19 @@
             <span class="size-desc">Фишки занимают весь экран — для слабовидящих</span>
           </button>
         </div>
+
+        <div class="setting-block">
+          <div class="setting-row range-row">
+            <span class="setting-label">
+              <span class="setting-name">Прозрачность фишек</span>
+              <span class="setting-desc">0% — фишки плотные, ничего не просвечивает сквозь слои. Больше — закрытые фишки словно стеклянные</span>
+            </span>
+            <output class="range-output" id="setting-tile-transparency-out" for="setting-tile-transparency">0%</output>
+          </div>
+          <input type="range" class="range-slider" id="setting-tile-transparency"
+                 min="0" max="50" step="5" value="0"
+                 aria-label="Прозрачность закрытых фишек" />
+        </div>
       </div>
 
       <div class="setting-group">

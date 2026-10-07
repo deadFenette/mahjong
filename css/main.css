@@ -771,6 +771,8 @@ body[data-screen="settings"] #screen-settings {
   box-shadow:
     inset 0 1px 0 var(--table-highlight),
     inset 0 -2px 0 var(--table-shadow),
+    /* Виньетка внутрь стола — глубина сцены (v6) */
+    inset 0 0 48px rgba(0, 0, 0, 0.22),
     0 12px 36px var(--shadow-strong),
     0 4px 12px var(--shadow-medium);
   border: 1px solid var(--table-border);
@@ -983,6 +985,70 @@ body[data-screen="settings"] #screen-settings {
 .setting-desc {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+/* ---------- Слайдер прозрачности ---------- */
+.setting-block {
+  padding: 4px 0 2px;
+}
+.range-row {
+  align-items: flex-start;
+  padding-bottom: 10px;
+}
+.range-output {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-gold);
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+}
+.range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    var(--accent-gold) 0%,
+    var(--accent-gold) var(--range-fill, 0%),
+    var(--border-soft) var(--range-fill, 0%),
+    var(--border-soft) 100%);
+  outline: none;
+  cursor: pointer;
+  margin: 2px 0 12px;
+  box-shadow: inset 0 1px 3px var(--shadow-soft);
+}
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--accent-gold-bright) 0%, var(--accent-gold-dark) 100%);
+  border: 2px solid var(--accent-gold-dark);
+  box-shadow: 0 2px 6px var(--shadow-medium), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+.range-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--accent-gold-bright) 0%, var(--accent-gold-dark) 100%);
+  border: 2px solid var(--accent-gold-dark);
+  box-shadow: 0 2px 6px var(--shadow-medium);
+  cursor: pointer;
+}
+.range-slider:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 4px;
 }
 
 /* Toggle switch */

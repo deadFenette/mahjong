@@ -30,6 +30,8 @@ body[data-theme="traditional"] {
   --accent-gold-glow: rgba(212, 169, 85, 0.6);
 
   --border-soft: #5a3a2a;
+  --card-border: #6a4430;
+  --tile-edge: rgba(60, 38, 18, 0.55);
   --shadow-soft: rgba(0, 0, 0, 0.2);
   --shadow-medium: rgba(0, 0, 0, 0.4);
   --shadow-strong: rgba(0, 0, 0, 0.65);
@@ -94,6 +96,8 @@ body[data-theme="jade"] {
   --accent-gold-glow: rgba(90, 138, 106, 0.5);
 
   --border-soft: #c8d0c8;
+  --card-border: #b0c0b0;
+  --tile-edge: rgba(80, 105, 85, 0.45);
   --shadow-soft: rgba(0, 0, 0, 0.06);
   --shadow-medium: rgba(0, 0, 0, 0.12);
   --shadow-strong: rgba(0, 0, 0, 0.2);
@@ -158,6 +162,8 @@ body[data-theme="porcelain"] {
   --accent-gold-glow: rgba(232, 200, 120, 0.6);
 
   --border-soft: #2a3a5a;
+  --card-border: #3a5078;
+  --tile-edge: rgba(20, 32, 52, 0.6);
   --shadow-soft: rgba(0, 0, 0, 0.3);
   --shadow-medium: rgba(0, 0, 0, 0.5);
   --shadow-strong: rgba(0, 0, 0, 0.7);

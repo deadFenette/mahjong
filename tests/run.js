@@ -13,6 +13,7 @@ require('./tileset.test.js');
 require('./game.test.js');
 require('./render-math.test.js');
 require('./storage.test.js');
+require('./appearance.test.js');
 
 const { report } = require('./runner');
 const ok = report();
