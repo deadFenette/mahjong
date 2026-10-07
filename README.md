@@ -1,157 +1,82 @@
-# Маджонг 🀄 (v6)
+# Mahjong Solitaire
 
-Красивый маджонг-пасьянс для бабушки. Чистые HTML/CSS/JS, без фреймворков —
-работает даже на слабом компьютере, без интернета, прямо с диска.
+A classic mahjong solitaire (pair-matching) game in pure HTML, CSS, and JavaScript.
+No frameworks, no build step, no runtime dependencies — and it runs fully offline.
 
-## Что нового в v6 — оформление и прозрачность
+## Features
 
-- **Фишки больше не просвечивают друг сквозь друга**: у закрытых фишек
-  был opacity 0.88 — сквозь них просвечивали нижние слои, и было «не ясно
-  кто и где». Теперь фишка всегда плотная, а приглушение закрытых фишек
-  сделано фильтром ВНУТРИ фишки (настоящая прозрачность — только по желанию)
-- **Прозрачность фишек настраивается** — новый слайдер в Настройках
-  («Оформление → Размер фишек → Прозрачность фишек», 0–50%):
-  - **0% (по умолчанию)** — фишки плотные, ничего не просвечивает —
-    максимальная чёткость для слабовидящих
-  - до 50% — закрытые фишки «стеклянные», сквозь них видно доску
-  - применяется мгновенно, даже посреди партии; свободные фишки всегда
-    непрозрачные, чтобы их было легко найти
-- **Больше красоты**: глянцевый блик на лицевой стороне каждой фишки,
-  тонкая тёмная окантовка по контуру (фишки не сливаются ни со столом,
-  ни друг с другом), более глубокая падающая тень — слои читаются однозначно
-- **Починены рамки карточек** в меню/настройках: переменная --card-border
-  использовалась, но нигде не определялась — у карточек раскладок,
-  сложности и тем вообще не было рамок, и подсветка при наведении не работала
-- **Виньетка на игровом столе** — глубина сцены
-- **Тесты**: `node tests/run.js` — 288 проверок (+16 новых: математика
-  прозрачности, хранение настройки, регрессия «плотные по умолчанию»)
+- **8 layouts** — Pyramid, Turtle, Cross, Wall, Boat, Butterfly, Heart, Spider
+- **144 canonical tiles** — dots, bamboo, characters, winds, dragons, flowers, seasons
+- **Two modes** — Classic (pick a layout, clear it, win) and Endless (layouts chain one after another, score accumulates)
+- **3 themes** — Traditional (ivory, dark wood, gold), Jade (pastel marble), Porcelain (vintage blue and gold)
+- **Hint, undo, shuffle** — no penalties in Endless mode; dead-end positions are reshuffled automatically
+- **Autosave** — close the tab mid-game and continue later
+- **Statistics** — games played, wins, best score
+- **Sound** — generated via the Web Audio API, no audio files
+- **Accessibility** — three tile sizes up to "Maximum" (tiles scale to fill the screen for low-vision players), configurable blocked-tile transparency (0–50%), free tiles are always opaque, `prefers-reduced-motion` supported
 
-## Что нового в v5 — масштаб и слои
+## Quick start
 
-- **«Максимальные» фишки** — новый режим по умолчанию: фишки вырастают
-  до максимума, который влезает в экран (на FullHD «Пирамида» — 77×108 px,
-  на 2K — 106×148 px вместо застревавших в v4 ~43×61 px)
-- **Починен масштаб**: раньше размер считался от стола, который сам
-  размерялся по доске (замкнутый круг) — фишки всегда оставались
-  минимальными и «не видели» размер экрана
-- **Убран жёсткий лимит 80 px** на ширину фишки
-- **Размер больше не вызывает прокрутку**: «Маленькие/Средние/Максимальные»
-  — это доля экрана (70/85/100%), доска всегда помещается целиком
-- **Слои пропорциональны фишкам**: зазор, подъём верхнего слоя, толщина
-  грани и радиусы растут вместе с фишками — пирамида выглядит объёмной
-  на любом размере
-- **Починен краш в эндшпиле**: авто-перемешивание больше не падает
-  с «Maximum call stack size exceeded»; тупик с фишкой «на спине» у
-  другой фишки теперь чинится переносом позиции
-- **Починены раскладки-гиганты** (Стена 188, Крест 202): дубликаты id
-  фишек ломали рескейл и подсветку половины доски
-- **Починено меню**: экран меню снова полноэкранный (position:relative
-  перебивал fixed — низ экрана оставался чёрным, кнопки обрезались)
-- **Превью раскладок** больше не обрезают верхние слои
-- **Анимация удаления** проигрывается целиком (раньше обрубалась на 50 мс)
-- **Щипок-зум разрешён** (user-scalable=no убран) + поддержка
-  prefers-reduced-motion
-- **Тесты**: `node tests/run.js` — 272 проверки (раскладки, тайлсет,
-  логика, математика масштаба, сохранения) без единой зависимости
+1. Clone or download this repository.
+2. Open `index.html` in any modern browser. No server, no build.
+3. Optional: install as a PWA for a standalone offline window (Chrome → install icon in the address bar, or run `Маджонг.bat` on Windows).
 
-## Что внутри
+## Controls
 
-- **8 раскладок**: Пирамида, Черепаха, Крест, Стена, Лодка, Бабочка, Сердце, Паук
-- **Два режима**:
-  - **Победа** — выбрал раскладку → собрал все пары → победа
-  - **Бесконечный** — раскладки сменяют друг друга, счёт растёт, можно играть часами
-- **144 фишки** по канонам: точки, бамбук, символы, ветры, драконы, цветы, сезоны
-- **3 темы оформления** (переключаются в Настройках):
-  - **Традиционный** — слоновая кость, тёмное дерево, золото
-  - **Нефрит** — пастельные тона, мрамор, мягкость
-  - **Фарфор** — винтажный синий с золотом
-- **Деревянный стол** под фишками с мягкими тенями — уютная атмосфера
-- **Атмосферный фон**: виньетка, тонкий золотой паттерн, плавные переходы
-- **Подсказки**, **отмена хода**, **перемешать** (всё без штрафов в бесконечном)
-- **Сохранение прогресса** — можно закрыть и продолжить завтра
-- **Статистика**: сколько сыграно, побед, лучший счёт
-- **Счётчик ходов** — видно, сколько пар можно собрать прямо сейчас
-- **Звук** через Web Audio API — без аудиофайлов
-- **Авто-подсказка** — выключена по умолчанию. Если включить в Настройках —
-  мигает доступная пара через 15 секунд бездействия
-- **Максимальные фишки для слабовидящих** (маленькие / средние /
-  максимальные — по умолчанию максимальные)
-- **Настраиваемая прозрачность фишек** — слайдер 0–50%, по умолчанию 0%
-  (плотные фишки)
-- **Подсветка доступных фишек** — мягкое свечение, чтобы не застревать
+| Key | Action |
+| --- | ------ |
+| `Esc` | Pause |
+| `H` | Hint |
+| `S` | Shuffle |
+| `Z` | Undo |
 
-## Как запустить (для бабушки)
+## Testing
 
-### Вариант 1 — просто открыть (самый простой)
+```bash
+node tests/run.js
+```
 
-1. Распакуйте папку `mahjong` куда-нибудь на компьютер (например, на Рабочий стол)
-2. Дважды кликните по файлу `index.html` — игра откроется в браузере
+288 dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, scaling math, storage, and appearance settings. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
 
-### Вариант 2 — установить как приложение (рекомендуется)
-
-1. Распакуйте папку `mahjong` в удобное место
-2. Дважды кликните по файлу `index.html` — игра откроется в Chrome
-3. В Chrome (правый верхний угол):
-   - Либо кликните иконку **«Установить»** (⊕ справа от адресной строки)
-   - Либо откройте меню **⋮** → **«Сохранить и поделиться»** → **«Установить приложение»**
-4. На Рабочем столе и в меню «Пуск» появится **«Маджонг»** — отдельное окно, без адресной строки, на весь экран
-5. После установки интернет **не нужен** — игра работает офлайн
-
-### Вариант 3 — `.bat` ярлык в папке
-
-В папке есть файл `Маджонг.bat` — двойной клик откроет игру в Chrome как
-приложение (без адресной строки, в отдельном окне).
-
-## Горячие клавиши
-
-- **Esc** — пауза
-- **H** — подсказка
-- **S** — перемешать
-- **Z** — отменить ход
-
-## Структура проекта
+## Project structure
 
 ```
 mahjong/
-├── index.html         — главный файл (его открывать)
-├── manifest.json      — PWA манифест
-├── sw.js              — service worker (офлайн-кеш)
-├── Маджонг.bat        — ярлык для Windows
-├── README.md          — этот файл
+├── index.html          Entry point
+├── manifest.json       PWA manifest
+├── sw.js               Service worker (offline cache)
+├── Маджонг.bat         Windows launcher
 ├── css/
-│   ├── main.css       — стили меню и экранов + атмосфера
-│   ├── tiles.css      — стили фишек
-│   └── themes.css     — три темы оформления + стол
+│   ├── main.css        Screens, menu, buttons
+│   ├── tiles.css       Tile rendering
+│   └── themes.css      The three themes
 ├── js/
-│   ├── tileset.js     — 144 фишки и правила совпадения
-│   ├── layouts.js     — 8 раскладок
-│   ├── game.js        — игровая логика
-│   ├── render.js      — отрисовка фишек
-│   ├── audio.js       — звук (Web Audio API)
-│   ├── storage.js     — сохранение настроек/прогресса
-│   ├── app.js         — главный контроллер
-│   └── sw-register.js — регистрация service worker
-└── icons/
-    ├── icon.svg       — векторная иконка
-    ├── icon-192.png   — для PWA
-    ├── icon-512.png   — для PWA
-    └── favicon.ico    — для вкладки браузера
+│   ├── tileset.js      144 tiles and matching rules
+│   ├── layouts.js      The 8 layouts
+│   ├── game.js         Game logic
+│   ├── render.js       Rendering and scaling
+│   ├── audio.js        Web Audio sound effects
+│   ├── storage.js      Settings and progress persistence
+│   ├── app.js          UI controller
+│   └── sw-register.js  Service worker registration
+├── tests/              Zero-dependency test suite
+└── icons/              App icons
 ```
 
-## Как добавить свою раскладку
+## Adding a custom layout
 
-Откройте `js/layouts.js` и добавьте новый объект в массив `all`:
+Add an object to the `all` array in `js/layouts.js`:
 
 ```js
 const myLayout = {
   id: 'mylayout',
-  name: 'Моя раскладка',
-  description: 'Описание',
+  name: 'My Layout',
+  description: 'Description',
   difficulty: 'easy', // easy | normal | hard
   icon: '★',
   layers: [
-    // Каждый слой — массив строк
-    // 'X' = тут фишка, ' ' или '.' = пусто
+    // Each layer is an array of strings.
+    // 'X' = tile, ' ' or '.' = empty
     [
       'XXX',
       'XXX',
@@ -162,31 +87,14 @@ const myLayout = {
     ],
   ],
 };
-
-const all = [pyramid, turtle, cross, wall, boat, butterfly, heart, spider, myLayout];
 ```
 
-Количество `X` должно быть чётным (фишки убираются парами).
-Слои автоматически центрируются по горизонтали.
+The number of `X` per layout must be even (tiles are removed in pairs). Layers are centered automatically.
 
-## Технические детали
+## Implementation notes
 
-- **Чистый JS** — никаких фреймворков, всё работает в любом современном браузере
-- **Размер**: ~80 КБ всего (HTML + CSS + JS), грузится мгновенно
-- **Рендеринг через DOM/CSS** — на слабых видеокартах работает быстрее Canvas
-- **PWA** — устанавливается как настоящее приложение, работает офлайн после первой загрузки
-- **Адаптивный** — подстраивается под размер экрана
-- **Никаких наложений** — каждый экран имеет свой непрозрачный фон, активный
-  экран управляется через `body[data-screen]` (единый источник правды)
-
-## Если что-то сломалось
-
-- Закройте игру и откройте заново — прогресс сохранён
-- Если статистика "сбилась" — Настройки → «Сбросить статистику»
-- Если игра "зависла" — обновите страницу (F5), последняя сохранённая партия восстановится
-- Если попали в тупик (нет пар) — игра автоматически перемешает фишки
-
----
-
-Сделано с заботой о бабушке. ❤️
-
+- ~80 KB total (HTML + CSS + JS); loads instantly
+- DOM/CSS rendering — smooth on weak GPUs, no canvas required
+- Screen switching is driven by `body[data-screen]`; every screen has an opaque background, so no layers bleed through
+- Tile scaling derives from the available stage area, so the board always fits the viewport at any size
+- The service worker caches all assets after the first load; subsequent runs are fully offline

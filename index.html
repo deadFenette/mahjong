@@ -151,24 +151,41 @@
         <span class="divider-line"></span>
       </div>
 
+      <!-- Три фишки-дракона: объёмная минималистичная эмблема -->
+      <div class="menu-tiles" aria-hidden="true">
+        <div class="mtile mtile-red" style="--r:-9deg">
+          <div class="mtile-face"><span class="mtile-glyph">中</span></div>
+        </div>
+        <div class="mtile mtile-green" style="--r:0deg">
+          <div class="mtile-face"><span class="mtile-glyph">發</span></div>
+        </div>
+        <div class="mtile mtile-white" style="--r:9deg">
+          <div class="mtile-face mtile-face-frame"></div>
+        </div>
+      </div>
+
       <div class="menu-buttons">
         <button class="btn btn-primary" id="btn-continue" hidden>
           <span class="btn-icon">▶</span>
           <span class="btn-label">Продолжить</span>
+          <span class="btn-arrow" aria-hidden="true">→</span>
         </button>
         <button class="btn" id="btn-classic">
           <span class="btn-icon">★</span>
           <span class="btn-label">Победа</span>
           <span class="btn-hint">Выбрать раскладку</span>
+          <span class="btn-arrow" aria-hidden="true">→</span>
         </button>
         <button class="btn" id="btn-endless">
           <span class="btn-icon">∞</span>
           <span class="btn-label">Бесконечный</span>
           <span class="btn-hint">Играй сколько хочешь</span>
+          <span class="btn-arrow" aria-hidden="true">→</span>
         </button>
         <button class="btn btn-ghost" id="btn-settings">
           <span class="btn-icon">⚙</span>
           <span class="btn-label">Настройки</span>
+          <span class="btn-arrow" aria-hidden="true">→</span>
         </button>
       </div>
 
