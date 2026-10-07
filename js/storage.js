@@ -13,7 +13,7 @@ const Storage = (function () {
     winSound: true,
     highlight: true,
     autohint: false,   // ← OFF по умолчанию (пользователь просил отключаемой)
-    tileSize: 'medium',
+    tileSize: 'large', // «Максимальные» — по умолчанию, для слабовидящих
   };
 
   function getSetting(key, fallback) {

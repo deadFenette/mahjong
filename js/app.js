@@ -31,8 +31,12 @@ const App = (function () {
     if (name === 'game') {
       const st = Game.getState();
       if (st) st.paused = false;
-      // Пересчитать под текущий размер экрана
-      setTimeout(() => Render.reposition(), 50);
+      // Пересчитать под текущий размер экрана.
+      // Двойной rAF: ждём реальную отрисовку экрана — измерения
+      // надёжнее, чем старый setTimeout(50).
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => Render.reposition());
+      });
     }
   }
 
@@ -331,20 +335,34 @@ const App = (function () {
     const layout = Layouts.getById(saved.layoutId);
     if (!layout) { Storage.clearGame(); return; }
 
-    // Восстанавливаем состояние
-    Game.newGame(layout); // создаст пустое состояние
-    const state = Game.getState();
-    state.tiles = saved.tiles.map(t => ({ ...t }));
-    state.board = {};
-    state.tiles.forEach(t => { state.board[Game.key(t.x, t.y, t.z)] = t; });
-    state.score = saved.score;
-    state.pairsFound = saved.pairsFound;
-    state.totalPairs = saved.totalPairs;
-    state.hintsUsed = saved.hintsUsed;
-    state.shufflesUsed = saved.shufflesUsed;
-    state.startTime = saved.startTime;
-    state.mode = saved.mode || 'classic';
-    state.endlessLevel = saved.endlessLevel || 0;
+    // Создаём чистое состояние — оно станет запасным вариантом,
+    // если сохранение повреждено или устарело (изменились раскладки)
+    Game.newGame(layout);
+    let state = Game.getState();
+
+    // Валидация сохранения: число фишек должно совпадать с раскладкой
+    const savedOk = Array.isArray(saved.tiles) &&
+      saved.tiles.length === layout.tilesCount;
+
+    if (savedOk) {
+      state.tiles = saved.tiles.map(t => ({ ...t }));
+      state.board = {};
+      state.tiles.forEach(t => { state.board[Game.key(t.x, t.y, t.z)] = t; });
+      state.score = saved.score || 0;
+      state.pairsFound = saved.pairsFound || 0;
+      state.totalPairs = saved.totalPairs || Math.floor(state.tiles.length / 2);
+      state.hintsUsed = saved.hintsUsed || 0;
+      state.shufflesUsed = saved.shufflesUsed || 0;
+      state.startTime = saved.startTime || Date.now();
+      state.mode = saved.mode || 'classic';
+      state.endlessLevel = saved.endlessLevel || 0;
+    } else {
+      // Сохранение не совпадает с раскладкой — начинаем заново,
+      // вместо сломанной доски
+      Storage.clearGame();
+      toast('Сохранение устарело — начинаем заново');
+    }
+
     state.selected = null;
     state.history = []; // историю не сохраняем — упрощаем
 
@@ -389,17 +407,27 @@ const App = (function () {
   function drawLayoutPreview(container, layout) {
     const w = container.clientWidth || 140;
     const h = container.clientHeight || 90;
-    const tileW = Math.min(w / layout.width, h / layout.height * 1.4) * 0.85;
-    const tileH = tileW / 1.4;
-    const gap = 1;
-    const zOff = 2;
+    const layers = Math.max(1, layout.layers);
+    const zOff = 3; // подъём слоя в превью
 
-    const offsetX = (w - layout.width * (tileW + gap)) / 2;
-    const offsetY = (h - layout.height * (tileH + gap)) / 2;
+    // Резервируем место под подъём верхних слоёв, иначе они обрезаются
+    const availW = w - 8;
+    const availH = h - 8 - (layers - 1) * zOff;
+    const tileW = Math.max(3, Math.min(availW / layout.width, (availH / layout.height) / 1.4));
+    const tileH = tileW * 1.4;
+    const gap = Math.max(0.5, tileW * 0.06);
+
+    const boardW = layout.width * (tileW + gap) - gap;
+    const boardH = layout.height * (tileH + gap) - gap;
+    const liftTotal = (layers - 1) * zOff;
+    const offsetX = (w - boardW) / 2;
+    // Блок целиком (вместе с подъёмом) центрируем по вертикали
+    const offsetY = (h - boardH - liftTotal) / 2 + liftTotal;
 
     container.innerHTML = '';
-    // Сортируем по z, y
-    const sorted = layout.positions.slice().sort((a, b) => a.z - b.z || a.y - b.y);
+    // Сортируем по z, y, x — нижние рисуются раньше верхних
+    const sorted = layout.positions.slice().sort((a, b) =>
+      a.z - b.z || a.y - b.y || a.x - b.x);
     sorted.forEach(p => {
       const dot = document.createElement('div');
       dot.className = 'preview-tile';
@@ -407,7 +435,7 @@ const App = (function () {
       dot.style.height = tileH + 'px';
       dot.style.left = (offsetX + p.x * (tileW + gap)) + 'px';
       dot.style.top = (offsetY + p.y * (tileH + gap) - p.z * zOff) + 'px';
-      dot.style.zIndex = (p.z + 1) * 10 + p.y;
+      dot.style.zIndex = (p.z + 1) * 100 + Math.round(p.y * 2);
       container.appendChild(dot);
     });
   }
@@ -438,12 +466,13 @@ const App = (function () {
     });
     if (currentScreen === 'game') {
       Render.reposition();
+      Render.highlightFree(Storage.getSetting('highlight', true));
     }
   }
 
   function loadSettings() {
     applyTheme(Storage.getSetting('theme', 'traditional'));
-    applyTileSize(Storage.getSetting('tileSize', 'medium'));
+    applyTileSize(Storage.getSetting('tileSize', 'large'));
     document.getElementById('setting-sound').checked = Storage.getSetting('sound', true);
     document.getElementById('setting-win-sound').checked = Storage.getSetting('winSound', true);
     document.getElementById('setting-highlight').checked = Storage.getSetting('highlight', true);
@@ -467,6 +496,8 @@ const App = (function () {
   }
 
   // ---------- Ресайз ----------
+  // Дебаунс + ResizeObserver: ловит и изменение окна, и изменение
+  // самого контейнера (PWA-окно, панель разработчика, системный зум)
   let resizeTimer = null;
   function onResize() {
     clearTimeout(resizeTimer);
@@ -646,14 +677,24 @@ const App = (function () {
 
     // Ресайз
     window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    // Следим за самим контейнером доски — PWA/зум/док-панели
+    const stage = document.getElementById('board-stage');
+    if (stage && 'ResizeObserver' in window) {
+      new ResizeObserver(onResize).observe(stage);
+    }
 
     // Клавиатура
     document.addEventListener('keydown', e => {
       if (currentScreen !== 'game') return;
+      const pauseEl = document.getElementById('pause-overlay');
+      const pauseOpen = pauseEl && !pauseEl.hidden;
       if (e.key === 'Escape') {
-        const pauseOpen = !document.getElementById('pause-overlay').hidden;
         if (pauseOpen) closePause(); else openPause();
+        return;
       }
+      // Игровые действия заблокированы, пока открыта пауза
+      if (pauseOpen) return;
       if (e.key === 'h' || e.key === 'H' || e.key === 'р' || e.key === 'Р') actHint();
       if (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы') actShuffle();
       if (e.key === 'z' || e.key === 'Z' || e.key === 'я' || e.key === 'Я') actUndo();

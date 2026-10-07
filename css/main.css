@@ -88,11 +88,17 @@ body[data-screen="settings"] #screen-settings {
 
 /* ============================================================
    ГЛАВНОЕ МЕНЮ — дизайнерский вид в эстетике Китая
+   ВАЖНО (v5): никакого position:relative здесь! Он перебивал
+   position:fixed из .screen — меню переставало быть
+   полноэкранным слоем, низ экрана оставался чёрным, а на
+   низких окнах кнопки обрезались.
    ============================================================ */
 #screen-menu {
   align-items: center;
   justify-content: center;
-  position: relative;
+  /* декоративные абсолюты (рамка, облака) и так привязаны к
+     фиксированному .screen как к containing block */
+  overflow-y: auto;
 }
 
 /* Вертикальные золотые кисточки по бокам */
@@ -751,8 +757,10 @@ body[data-screen="settings"] #screen-settings {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30px;
+  /* Паддинг адаптивный: на телефонах минимальный — вся площадь фишкам */
+  padding: clamp(10px, 2.5vw, 26px);
   z-index: 1;
+  -webkit-overflow-scrolling: touch;
 }
 .board-table {
   position: relative;
@@ -1030,6 +1038,19 @@ body[data-screen="settings"] #screen-settings {
   transition: all 0.2s;
   font-family: inherit;
   color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.size-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+.size-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 .theme-card:hover, .size-card:hover {
   border-color: var(--accent-gold);
@@ -1114,6 +1135,17 @@ body[data-screen="settings"] #screen-settings {
 }
 
 /* ============================================================
+   ДОСТУПНОСТЬ: уменьшенная анимация (настройка ОС)
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
    СКРОЛЛБАРЫ
    ============================================================ */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -1136,8 +1168,7 @@ body[data-screen="settings"] #screen-settings {
   .stat-value { font-size: 20px; }
   .btn { padding: 14px 18px; font-size: 16px; }
   .btn-hint { display: none; }
-  .board-stage { padding: 12px; }
-  .board-table { padding: 20px; }
   .win-stats { gap: 24px; }
   .win-stat strong { font-size: 26px; }
+  .theme-picker, .size-picker { grid-template-columns: 1fr; }
 }

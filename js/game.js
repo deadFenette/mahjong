@@ -206,34 +206,170 @@ const Game = (function () {
   }
 
   // ---------- Перемешать оставшиеся фишки ----------
+  // v5: БЕЗ рекурсии! Раньше shuffleBoard вызывала сама себя при тупике,
+  // а если среди оставшихся фишек не было ни одной совпадающей пары
+  // (бывает в эндшпиле) — бесконечная рекурсия роняла игру
+  // («Maximum call stack size exceeded»).
+  // Теперь: цикл «случайные расстановки → посадка готовой пары на
+  // свободные места → при полном отсутствии совпадений копируем
+  // личность одной фишки на другую». Ходы появляются гарантированно.
   function shuffleBoard(countAsUse = true) {
     const remaining = state.tiles.filter(t => !t.removed);
     if (remaining.length === 0) return false;
 
-    // Сохраняем позиции, перемешиваем фишки
-    const positions = remaining.map(t => ({ x: t.x, y: t.y, z: t.z }));
-    const shuffledPos = shuffle(positions.slice());
-
-    // Очищаем старые ключи
-    remaining.forEach(t => { delete state.board[key(t.x, t.y, t.z)]; });
-
-    // Назначаем новые позиции, но так чтобы пары были разнесены
-    // (упрощённо — просто случайно)
-    const tilesShuffled = shuffle(remaining.slice());
-    tilesShuffled.forEach((t, i) => {
-      const p = shuffledPos[i];
-      t.x = p.x; t.y = p.y; t.z = p.z;
-      state.board[key(p.x, p.y, p.z)] = t;
-    });
+    for (let round = 0; round < 3; round++) {
+      if (findArrangementWithMove(remaining)) break;
+      // Совпадающих пар нет вообще — меняем личность одной фишки,
+      // чтобы партия гарантированно могла продолжиться
+      rescueByCopyingIdentity(remaining);
+    }
 
     state.selected = null;
     if (countAsUse) state.shufflesUsed += 1;
-
-    // Если всё равно тупик — повторим
-    if (!hasAnyMove() && remaining.length > 0) {
-      return shuffleBoard(false);
-    }
     return true;
+  }
+
+  // Случайные расстановки + конструктивная посадка пары.
+  // Возвращает true, если в итоге ход есть.
+  function findArrangementWithMove(remaining) {
+    let positions = remaining.map(t => ({ x: t.x, y: t.y, z: t.z }));
+
+    // Деградировавший набор позиций чиним ДО перебора: если последние
+    // фишки стоят друг на друге — ни одна расстановка лиц не даст ход
+    const repaired = repairPositionSet(positions);
+    if (repaired) positions = repaired;
+
+    for (let attempt = 0; attempt < 300; attempt++) {
+      applyArrangement(remaining, shuffle(positions.slice()));
+      if (hasAnyMove()) return true;
+    }
+
+    // Случайные переборы не помогли. Если пара совпадающих фишек есть —
+    // сажаем её прямо на свободные места (проверяем результат).
+    return seatMatchingPairOnFreeSpots(remaining, positions);
+  }
+
+  // Чинит деградировавший набор позиций. Классика эндшпиля: остались
+  // две фишки, и одна НАКРЫВАЕТ другую — свободна только одна, ходов
+  // нет и не будет при любом раскладе лиц. Переносим накрытую позицию
+  // в свободную «дырку» раскладки (позиция, которую никто не накрывает).
+  // Возвращает исправленный набор или null, если всё в порядке.
+  function repairPositionSet(positions) {
+    if (positions.length < 2) return null;
+    if (freeSpotsCount(positions) >= 2) return null; // норм
+
+    const layout = state.layout;
+    const same = (a, b) => a.x === b.x && a.y === b.y && a.z === b.z;
+    let fixed = positions.slice();
+
+    for (let guard = 0; guard < 50 && freeSpotsCount(fixed) < 2; guard++) {
+      // накрытая позиция — та, над которой стоит другая оставшаяся
+      const covered = fixed.find(p =>
+        fixed.some(q => q !== p && q.z === p.z + 1 &&
+          Math.abs(q.x - p.x) < 0.75 && Math.abs(q.y - p.y) < 0.75));
+      if (!covered) break;
+      // свободная дырка: позиция раскладки, свободная сейчас и не занятая
+      const hole = layout.positions.find(p =>
+        !fixed.some(q => same(q, p)) &&
+        spotIsFree(fixed.filter(q => q !== covered).concat([p]), p));
+      if (!hole) break;
+      fixed = fixed.map(q => q === covered
+        ? { x: hole.x, y: hole.y, z: hole.z } : q);
+    }
+    return freeSpotsCount(fixed) >= 2 ? fixed : null;
+  }
+
+  function freeSpotsCount(spots) {
+    return spots.filter(p => spotIsFree(spots, p)).length;
+  }
+
+  function applyArrangement(remaining, arrangement) {
+    remaining.forEach(t => { delete state.board[key(t.x, t.y, t.z)]; });
+    remaining.forEach((t, i) => {
+      const p = arrangement[i];
+      t.x = p.x; t.y = p.y; t.z = p.z;
+      state.board[key(p.x, p.y, p.z)] = t;
+    });
+  }
+
+  function rebuildBoardKeys(remaining) {
+    remaining.forEach(t => { delete state.board[key(t.x, t.y, t.z)]; });
+    remaining.forEach(t => { state.board[key(t.x, t.y, t.z)] = t; });
+  }
+
+  // Первая найденная пара совпадающих фишек среди remaining
+  function firstMatchingPair(tiles) {
+    for (let i = 0; i < tiles.length; i++) {
+      for (let j = i + 1; j < tiles.length; j++) {
+        if (Tileset.isMatch(tiles[i], tiles[j])) return [tiles[i], tiles[j]];
+      }
+    }
+    return null;
+  }
+
+  // Геометрия свободной позиции — та же, что в isFree, но для места
+  function spotIsFree(spots, spot) {
+    const covered = spots.some(o =>
+      o !== spot && o.z === spot.z + 1 &&
+      Math.abs(o.x - spot.x) < 0.75 && Math.abs(o.y - spot.y) < 0.75);
+    if (covered) return false;
+    let left = false;
+    let right = false;
+    for (const o of spots) {
+      if (o === spot || o.z !== spot.z) continue;
+      if (Math.abs(o.y - spot.y) > 0.75) continue;
+      const dx = o.x - spot.x;
+      if (dx < -0.25 && dx > -1.75) left = true;
+      else if (dx > 0.25 && dx < 1.75) right = true;
+    }
+    return !(left && right);
+  }
+
+  // Посадить пару совпадающих фишек на фактически свободные позиции.
+  // В любой расстановке свободных позиций не меньше двух
+  // (верхний слой: крайние левая-верхняя и правая-нижняя фишки),
+  // поэтому рано или поздно пара встанет на места и останется свободной.
+  function seatMatchingPairOnFreeSpots(remaining, positions) {
+    const pair = firstMatchingPair(remaining);
+    if (!pair) return false;
+
+    for (let attempt = 0; attempt < 80; attempt++) {
+      applyArrangement(remaining, shuffle(positions.slice()));
+      const spots = remaining.filter(t => spotIsFree(remaining, t));
+      if (spots.length < 2) continue;
+      swapTileToSpot(remaining, pair[0], spots[0]);
+      swapTileToSpot(remaining, pair[1], spots[1]);
+      rebuildBoardKeys(remaining);
+      if (hasAnyMove()) return true;
+      // Перестановка сломала свободу — пробуем другую расстановку
+    }
+    return false;
+  }
+
+  // Обменять фишку местами с той, что стоит на spot (по координатам)
+  function swapTileToSpot(remaining, tile, spot) {
+    const occupant = remaining.find(o =>
+      o !== tile && o.x === spot.x && o.y === spot.y && o.z === spot.z);
+    const old = { x: tile.x, y: tile.y, z: tile.z };
+    tile.x = spot.x; tile.y = spot.y; tile.z = spot.z;
+    if (occupant) {
+      occupant.x = old.x; occupant.y = old.y; occupant.z = old.z;
+    }
+  }
+
+  // Эндшпиль без единой пары (все партнёры собраны раньше):
+  // копируем масть/ранг/лицо одной фишки на другую —
+  // совпадающая пара появляется, партия продолжается.
+  function rescueByCopyingIdentity(remaining) {
+    if (remaining.length < 2) return;
+    const src = remaining[0];
+    const dst = remaining.find(t =>
+      t !== src && (t.suit !== src.suit || t.rank !== src.rank));
+    if (!dst) return;
+    dst.suit = src.suit;
+    dst.rank = src.rank;
+    dst.name = src.name;
+    dst.face = src.face;
   }
 
   // ---------- Завершить игру (для бесконечного — начать новый уровень) ----------

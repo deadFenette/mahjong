@@ -3,7 +3,7 @@
    Кэшируем все файлы при первой загрузке
    ============================================================ */
 
-const CACHE_NAME = 'mahjong-v6-y-center';
+const CACHE_NAME = 'mahjong-v7-max-tiles';
 const ASSETS = [
   './',
   './index.html',
