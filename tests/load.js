@@ -39,16 +39,20 @@ function loadGameModules({ seedStorage = true } = {}) {
     Promise,
     setTimeout: () => 0,     // таймеры в тестах не нужны
     clearTimeout: () => {},
+    setInterval: () => 0,    // планировщик музыки в тестах не запускается
+    clearInterval: () => {},
     performance: { now: () => Date.now() },
   };
   if (seedStorage) sandbox.localStorage = makeLocalStorageShim();
 
   const context = vm.createContext(sandbox);
 
-  // Порядок как в index.html (без app.js и sw-register.js)
+  // Порядок как в index.html (без audio.js, app.js и sw-register.js;
+  // music.js в песочнице безопасен — рантайм-код без window не выполняется)
   const files = [
     'js/tileset.js',
     'js/layouts.js',
+    'js/music.js',
     'js/storage.js',
     'js/render.js',
     'js/game.js',
@@ -61,7 +65,7 @@ function loadGameModules({ seedStorage = true } = {}) {
   }
 
   // Экспортируем глобальные модули из области видимости скрипта
-  source += `\n;globalThis.__modules = { Tileset, Layouts, Storage, Render, Game };`;
+  source += `\n;globalThis.__modules = { Tileset, Layouts, Music, Storage, Render, Game };`;
 
   vm.runInContext(source, context, { filename: 'mahjong-bundle.js' });
   return context.__modules;

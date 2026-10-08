@@ -1,5 +1,5 @@
 /* ============================================================
-   THEMES.CSS — Три темы оформления + атмосфера
+   THEMES.CSS — Пять тем оформления + атмосфера
    Каждая тема: фон экранов, тексты, акценты, стол, фишки
    ============================================================ */
 
@@ -269,4 +269,72 @@ body[data-theme="night"] {
   --tile-hover-glow-soft: rgba(212, 169, 85, 0.5);
   --tile-hint-glow: rgba(240, 200, 120, 1);
   --tile-hint-glow-soft: rgba(240, 200, 120, 0.6);
+}
+
+/* ============================================================
+   5. IMPERIAL (v10) — багровый лак, много золота.
+   Самая «богатая» тема: пурпурно-багровый лакированный стол,
+   обильное золото в акцентах, фишки — слоновая кость.
+   ============================================================ */
+body[data-theme="imperial"] {
+  --bg-solid: #200808;
+
+  --atm-gradient: linear-gradient(135deg, #3a1010 0%, #260a0a 50%, #120404 100%);
+  --atm-pattern: radial-gradient(circle, rgba(232, 190, 110, 0.2) 1px, transparent 1.5px);
+  --atm-pattern-size: 56px 56px;
+  --atm-pattern-opacity: 0.45;
+  --atm-vignette: rgba(0, 0, 0, 0.75);
+
+  --bg-screen: linear-gradient(135deg, rgba(58, 16, 16, 0.96) 0%, rgba(32, 8, 8, 0.98) 100%);
+  --bg-header: rgba(32, 10, 10, 0.75);
+
+  --text-main: #f5e8d0;
+  --text-muted: #c8a080;
+  --text-faint: #8a6a50;
+
+  --accent-gold: #e0b060;
+  --accent-gold-dark: #b08840;
+  --accent-gold-bright: #f5d898;
+  --accent-gold-soft: rgba(224, 176, 96, 0.42);
+  --accent-gold-glow: rgba(224, 176, 96, 0.65);
+
+  --border-soft: #5a2a24;
+  --card-border: #7a4030;
+  --tile-edge: rgba(52, 16, 12, 0.55);
+  --shadow-soft: rgba(0, 0, 0, 0.25);
+  --shadow-medium: rgba(0, 0, 0, 0.45);
+  --shadow-strong: rgba(0, 0, 0, 0.7);
+
+  --btn-bg: rgba(80, 28, 24, 0.7);
+  --btn-bg-hover: rgba(104, 40, 32, 0.85);
+  --btn-border: #5a2a24;
+  --btn-text: var(--text-main);
+
+  --card-bg: rgba(80, 28, 24, 0.6);
+  --card-bg-hover: rgba(104, 40, 32, 0.8);
+  --card-bg-active: rgba(130, 52, 40, 0.9);
+
+  --preview-bg: linear-gradient(135deg, #200808 0%, #3a1010 100%);
+  --preview-tile: var(--accent-gold);
+
+  /* Стол — багровый лакированный с золотой нитью */
+  --table-bg:
+    radial-gradient(circle at 30% 30%, rgba(232, 190, 110, 0.09), transparent 60%),
+    linear-gradient(135deg, #4a1612 0%, #320e0a 50%, #1e0705 100%);
+  --table-highlight: rgba(232, 190, 110, 0.16);
+  --table-shadow: rgba(0, 0, 0, 0.6);
+  --table-border: #6a2818;
+
+  /* Фишки — слоновая кость (контраст на багровом) */
+  --tile-bg: linear-gradient(160deg, #fdf8ea 0%, #f5ecd5 40%, #e8dab8 100%);
+  --tile-border: #b09868;
+  --tile-inner-border: rgba(180, 150, 90, 0.3);
+  --tile-highlight: rgba(255, 255, 255, 0.85);
+  --tile-shadow: rgba(90, 30, 20, 0.4);
+  --tile-free-glow: rgba(232, 190, 110, 0.55);
+  --tile-free-glow-soft: rgba(232, 190, 110, 0.28);
+  --tile-hover-glow: rgba(232, 190, 110, 0.9);
+  --tile-hover-glow-soft: rgba(232, 190, 110, 0.5);
+  --tile-hint-glow: rgba(245, 216, 152, 1);
+  --tile-hint-glow-soft: rgba(245, 216, 152, 0.6);
 }

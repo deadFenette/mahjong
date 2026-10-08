@@ -82,6 +82,9 @@
     <!-- Падающие лепестки сакуры -->
     <div class="petals-container" aria-hidden="true" id="petals-container"></div>
 
+    <!-- Золотая пыль — медленно поднимающиеся искры (v10) -->
+    <div class="menu-dust" aria-hidden="true" id="menu-dust"></div>
+
     <div class="menu-inner">
       <!-- Девиз сверху (вертикальный) -->
       <div class="menu-top-motto" aria-hidden="true">
@@ -315,6 +318,8 @@
         <button class="btn" id="pause-restart">Начать заново</button>
         <button class="btn" id="pause-new">Другая раскладка</button>
         <button class="btn" id="pause-fullscreen">Полный экран</button>
+        <!-- v10: быстрый выключатель фоновой музыки -->
+        <button class="btn" id="pause-music">Музыка: вкл</button>
         <button class="btn btn-ghost" id="pause-menu">В главное меню</button>
       </div>
     </div>
@@ -326,6 +331,8 @@
       <div class="win-glow"></div>
       <div class="win-burst" id="win-burst"></div>
       <h2 class="win-title">Победа!</h2>
+      <!-- v10: золотой бейдж «Новый рекорд!» — счёт или время лучше прежних -->
+      <div class="win-record" id="win-record" hidden>Новый рекорд!</div>
       <p class="win-subtitle" id="win-text">Вы собрали все пары!</p>
       <div class="win-stats">
         <div class="win-stat"><span>Счёт</span><strong id="win-score">0</strong></div>
@@ -370,6 +377,11 @@
             <div class="theme-preview theme-preview-night"></div>
             <span class="theme-name">Ночь</span>
             <span class="theme-desc">Чёрный лак, золото, киноварь</span>
+          </button>
+          <button class="theme-card" data-theme="imperial">
+            <div class="theme-preview theme-preview-imperial"></div>
+            <span class="theme-name">Император</span>
+            <span class="theme-desc">Багровый лак, много золота</span>
           </button>
         </div>
       </div>
@@ -426,6 +438,30 @@
       </div>
 
       <div class="setting-group">
+        <h3 class="setting-title">Музыка</h3>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Фоновая музыка</span>
+            <span class="setting-desc">Тихая живая мелодия — у каждой темы свой лад</span>
+          </span>
+          <input type="checkbox" id="setting-music" class="toggle" checked />
+          <span class="toggle-switch"></span>
+        </label>
+        <div class="setting-block">
+          <div class="setting-row range-row">
+            <span class="setting-label">
+              <span class="setting-name">Громкость музыки</span>
+              <span class="setting-desc">Музыка звучит фоном и не мешает сосредоточиться</span>
+            </span>
+            <output class="range-output" id="setting-music-volume-out" for="setting-music-volume">35%</output>
+          </div>
+          <input type="range" class="range-slider" id="setting-music-volume"
+                 min="0" max="100" step="5" value="35"
+                 aria-label="Громкость фоновой музыки" />
+        </div>
+      </div>
+
+      <div class="setting-group">
         <h3 class="setting-title">Звук</h3>
         <label class="setting-row toggle-row">
           <span class="setting-label">
@@ -459,6 +495,7 @@
   <script src="js/tileset.js"></script>
   <script src="js/layouts.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/music.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/render.js"></script>
   <script src="js/game.js"></script>

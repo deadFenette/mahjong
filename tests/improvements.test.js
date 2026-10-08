@@ -266,9 +266,9 @@ suite('themes.css — паритет переменных (регрессия --
   while ((m = re.exec(css)) !== null) blocks[m[1]] = m[2];
   const themes = Object.keys(blocks);
 
-  test('все четыре темы объявлены', () => {
-    assertEq(themes.length, 4);
-    ['traditional', 'jade', 'porcelain', 'night'].forEach(t =>
+  test('все пять тем объявлены', () => {
+    assertEq(themes.length, 5);
+    ['traditional', 'jade', 'porcelain', 'night', 'imperial'].forEach(t =>
       assertOk(themes.includes(t), `нет темы ${t}`));
   });
 
@@ -287,6 +287,12 @@ suite('themes.css — паритет переменных (регрессия --
       assertOk(blocks.night.includes(v), `в night нет ${v}`));
   });
 
+  test('в императорскую тему попали критичные для интерфейса переменные', () => {
+    ['--card-border', '--tile-edge', '--btn-bg', '--card-bg',
+     '--table-bg', '--text-main', '--accent-gold'].forEach(v =>
+      assertOk(blocks.imperial.includes(v), `в imperial нет ${v}`));
+  });
+
   test('превью ночной темы есть в main.css и index.html', () => {
     const mainCss = fs.readFileSync(
       path.join(__dirname, '..', 'css', 'main.css'), 'utf8');
@@ -294,5 +300,14 @@ suite('themes.css — паритет переменных (регрессия --
       path.join(__dirname, '..', 'index.html'), 'utf8');
     assertOk(mainCss.includes('.theme-preview-night'), 'нет превью в main.css');
     assertOk(html.includes('data-theme="night"'), 'нет карточки темы в index.html');
+  });
+
+  test('превью императорской темы есть в main.css и index.html', () => {
+    const mainCss = fs.readFileSync(
+      path.join(__dirname, '..', 'css', 'main.css'), 'utf8');
+    const html = fs.readFileSync(
+      path.join(__dirname, '..', 'index.html'), 'utf8');
+    assertOk(mainCss.includes('.theme-preview-imperial'), 'нет превью в main.css');
+    assertOk(html.includes('data-theme="imperial"'), 'нет карточки темы в index.html');
   });
 });

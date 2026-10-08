@@ -202,6 +202,8 @@ const App = (function () {
     buzz(40); // v9: заметный виброотклик победы
     stopTimer();
     const time = Game.getElapsedSeconds();
+    // v10: снимаем рекорды ДО записи результата — иначе всё станет рекордом
+    const prevStats = Storage.getStats();
     Storage.addResult({
       won: true,
       score: state.score,
@@ -216,6 +218,14 @@ const App = (function () {
     document.getElementById('win-score').textContent = state.score;
     document.getElementById('win-time').textContent = formatTime(time);
     document.getElementById('win-hints').textContent = state.hintsUsed;
+
+    // v10: золотой бейдж «Новый рекорд!» — побит лучший счёт или время
+    const recEl = document.getElementById('win-record');
+    if (recEl) {
+      const beatScore = state.score > prevStats.bestScore;
+      const beatTime = prevStats.bestTime === null || time < prevStats.bestTime;
+      recEl.hidden = !(beatScore || beatTime);
+    }
 
     // В бесконечном режиме — показать "следующая"
     const nextBtn = document.getElementById('win-next');
@@ -550,6 +560,8 @@ const App = (function () {
     document.querySelectorAll('.theme-card').forEach(c => {
       c.classList.toggle('active', c.dataset.theme === theme);
     });
+    // v10: у каждой темы свой музыкальный лад
+    Music.setTheme(theme);
   }
 
   function applyTileSize(size) {
@@ -583,11 +595,45 @@ const App = (function () {
     }
   }
 
+  // ---------- Фоновая музыка (v10) ----------
+  // Тумблер и громкость в настройках, дублирующая кнопка в паузе.
+  // Настройка пишется в Storage и мгновенно применяется к движку.
+  function updatePauseMusicLabel() {
+    const btn = document.getElementById('pause-music');
+    if (!btn) return;
+    btn.textContent = 'Музыка: ' + (Storage.getSetting('music', true) ? 'вкл' : 'выкл');
+  }
+
+  function applyMusicEnabled(v, opts = {}) {
+    if (opts.persist !== false) Storage.setSetting('music', !!v);
+    Music.setEnabled(!!v);
+    const cb = document.getElementById('setting-music');
+    if (cb) cb.checked = !!v;
+    updatePauseMusicLabel();
+  }
+
+  function applyMusicVolume(pct, opts = {}) {
+    const p = Music.clampVolume(pct);
+    if (opts.persist !== false) Storage.setSetting('musicVolume', p);
+    Music.setVolume(p);
+    const out = document.getElementById('setting-music-volume-out');
+    const slider = document.getElementById('setting-music-volume');
+    if (out) out.textContent = p + '%';
+    if (slider) {
+      slider.value = String(p);
+      // Заливка трека слайдера до текущего значения
+      slider.style.setProperty('--range-fill', p + '%');
+    }
+  }
+
   function loadSettings() {
     applyTheme(Storage.getSetting('theme', 'traditional'));
     applyTileSize(Storage.getSetting('tileSize', 'large'));
     // Прозрачность по умолчанию 0% — фишки плотные (регрессия v5: было 0.88)
     applyTileTransparency(Storage.getSetting('tileTransparency', 0), { persist: false });
+    // v10: музыка — тумблер, громкость и заливка слайдера
+    applyMusicEnabled(Storage.getSetting('music', true), { persist: false });
+    applyMusicVolume(Storage.getSetting('musicVolume', Music.VOLUME_DEFAULT), { persist: false });
     document.getElementById('setting-sound').checked = Storage.getSetting('sound', true);
     document.getElementById('setting-win-sound').checked = Storage.getSetting('winSound', true);
     document.getElementById('setting-highlight').checked = Storage.getSetting('highlight', true);
@@ -599,17 +645,21 @@ const App = (function () {
     const state = Game.getState();
     if (!state || state.ended) return;
     Game.pause(); // v9: флаг + честная остановка часов
+    // v10: музыка приглушается — но не выключается
+    Music.duck(true);
     // v9: сводка на карточке паузы — счёт и время видно без выхода из паузы
     const sEl = document.getElementById('pause-score');
     const tEl = document.getElementById('pause-time');
     if (sEl) sEl.textContent = state.score;
     if (tEl) tEl.textContent = formatTime(Game.getElapsedSeconds());
+    updatePauseMusicLabel();
     document.getElementById('pause-overlay').hidden = false;
     cancelAutohint();
   }
   function closePause() {
     document.getElementById('pause-overlay').hidden = true;
     Game.resume(); // v9
+    Music.duck(false); // v10: возвращаем громкость
     lastActionTime = Date.now();
     scheduleAutohint();
   }
@@ -680,13 +730,42 @@ const App = (function () {
     }
   }
 
+  // ---------- Золотая пыль (v10) ----------
+  // Медленно поднимающиеся золотые искры в меню — глубина и «богатство».
+  // CSS-анимация, reduced-motion гасит глобально (main.css).
+  function initGoldDust() {
+    const container = document.getElementById('menu-dust');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < 16; i++) {
+      const mote = document.createElement('span');
+      mote.className = 'dust-mote';
+      mote.style.left = (Math.random() * 100) + '%';
+      mote.style.bottom = (-10 - Math.random() * 20) + '%';
+      mote.style.animationDuration = (14 + Math.random() * 14) + 's';
+      mote.style.animationDelay = (-Math.random() * 24) + 's';
+      const size = 2 + Math.random() * 4;
+      mote.style.width = size.toFixed(1) + 'px';
+      mote.style.height = size.toFixed(1) + 'px';
+      mote.style.setProperty('--dx', ((Math.random() * 2 - 1) * 60).toFixed(0) + 'px');
+      container.appendChild(mote);
+    }
+  }
+
   // ---------- Инициализация ----------
   function init() {
     Audio2.init();
+    // v10: фоновая музыка — лад берём из сохранённой темы
+    Music.init({
+      theme: Storage.getSetting('theme', 'traditional'),
+      enabled: Storage.getSetting('music', true),
+      volumePct: Storage.getSetting('musicVolume', Music.VOLUME_DEFAULT),
+    });
     Render.init(document.getElementById('board'));
     loadSettings();
     updateMenuStats();
     initPetals();
+    initGoldDust(); // v10
 
     // Кнопки главного меню
     document.getElementById('btn-continue').addEventListener('click', continueSaved);
@@ -822,6 +901,25 @@ const App = (function () {
       Storage.setSetting('winSound', e.target.checked);
       Audio2.setWinEnabled(e.target.checked);
     });
+
+    // v10: фоновая музыка — тумблер, громкость, кнопка в паузе
+    document.getElementById('setting-music').addEventListener('change', e => {
+      applyMusicEnabled(e.target.checked);
+      if (e.target.checked) Audio2.click();
+    });
+    const musicVolSlider = document.getElementById('setting-music-volume');
+    if (musicVolSlider) {
+      musicVolSlider.addEventListener('input', e => {
+        applyMusicVolume(Number(e.target.value));
+      });
+    }
+    const pauseMusicBtn = document.getElementById('pause-music');
+    if (pauseMusicBtn) {
+      pauseMusicBtn.addEventListener('click', () => {
+        applyMusicEnabled(!Storage.getSetting('music', true));
+        Audio2.click();
+      });
+    }
     document.getElementById('setting-highlight').addEventListener('change', e => {
       Storage.setSetting('highlight', e.target.checked);
       if (currentScreen === 'game') {

@@ -16,6 +16,7 @@ require('./storage.test.js');
 require('./appearance.test.js');
 require('./animations.test.js');
 require('./improvements.test.js');
+require('./music.test.js');
 
 const { report } = require('./runner');
 const ok = report();
