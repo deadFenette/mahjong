@@ -34,13 +34,24 @@ const Storage = (function () {
   }
 
   // ---------- Статистика ----------
+  // layouts (v9): { [layoutId]: сколько раз раскладка собрана } —
+  // на карточках галереи рисуется бейдж «✓ N»
+  function emptyStats() {
+    return { played: 0, won: 0, bestScore: 0, bestTime: null, totalPairs: 0, layouts: {} };
+  }
+
   function getStats() {
     try {
       const raw = localStorage.getItem(PREFIX + 'stats');
-      if (!raw) return { played: 0, won: 0, bestScore: 0, bestTime: null, totalPairs: 0 };
-      return JSON.parse(raw);
+      if (!raw) return emptyStats();
+      const s = JSON.parse(raw);
+      // Легаси-статистика без поля layouts чинится на лету
+      if (!s.layouts || typeof s.layouts !== 'object' || Array.isArray(s.layouts)) {
+        s.layouts = {};
+      }
+      return s;
     } catch (e) {
-      return { played: 0, won: 0, bestScore: 0, bestTime: null, totalPairs: 0 };
+      return emptyStats();
     }
   }
 
@@ -48,7 +59,7 @@ const Storage = (function () {
     try { localStorage.setItem(PREFIX + 'stats', JSON.stringify(stats)); } catch (e) {}
   }
 
-  function addResult({ won, score, time, pairs }) {
+  function addResult({ won, score, time, pairs, layoutId, mode }) {
     const s = getStats();
     s.played += 1;
     if (won) {
@@ -56,13 +67,18 @@ const Storage = (function () {
       s.totalPairs += pairs;
       if (score > s.bestScore) s.bestScore = score;
       if (s.bestTime === null || time < s.bestTime) s.bestTime = time;
+      // Победа раскладки — только в классике: в бесконечном
+      // раскладки циклятся, счётчик там ничего не значит
+      if (mode !== 'endless' && layoutId) {
+        s.layouts[layoutId] = (s.layouts[layoutId] || 0) + 1;
+      }
     }
     setStats(s);
     return s;
   }
 
   function resetStats() {
-    setStats({ played: 0, won: 0, bestScore: 0, bestTime: null, totalPairs: 0 });
+    setStats(emptyStats());
   }
 
   // ---------- Текущая игра (для "Продолжить") ----------

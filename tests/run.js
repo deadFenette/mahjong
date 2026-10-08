@@ -15,6 +15,7 @@ require('./render-math.test.js');
 require('./storage.test.js');
 require('./appearance.test.js');
 require('./animations.test.js');
+require('./improvements.test.js');
 
 const { report } = require('./runner');
 const ok = report();

@@ -30,7 +30,9 @@ const App = (function () {
     if (name === 'menu') updateMenuStats();
     if (name === 'game') {
       const st = Game.getState();
-      if (st) st.paused = false;
+      // v9: Game.resume() вместо прямого st.paused = false —
+      // заодно корректно перезапускает игровые часы
+      if (st && !st.ended) Game.resume();
       // Пересчитать под текущий размер экрана.
       // Двойной rAF: ждём реальную отрисовку экрана — измерения
       // надёжнее, чем старый setTimeout(50).
@@ -58,11 +60,25 @@ const App = (function () {
     }
   }
 
+  // ---------- Виброотклик на мобильных (v9) ----------
+  // Мягкий короткий отклик на матч/победу; на десктопе тихо игнорируется
+  function buzz(ms) {
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(ms);
+      }
+    } catch (e) { /* вибрация недоступна — не страшно */ }
+  }
+
   function updateMenuStats() {
     const stats = Storage.getStats();
     setTextBumped(document.getElementById('stat-played'), stats.played);
     setTextBumped(document.getElementById('stat-won'), stats.won);
     setTextBumped(document.getElementById('stat-best'), stats.bestScore);
+    // v9: рекорд времени (— если побед ещё нет)
+    const bt = stats.bestTime;
+    setTextBumped(document.getElementById('stat-best-time'),
+      (bt === null || bt === undefined) ? '—' : formatTime(Number(bt) || 0));
     // Кнопка «Продолжить» видна только если есть сохранённая игра
     document.getElementById('btn-continue').hidden = !Storage.hasSavedGame();
   }
@@ -124,6 +140,7 @@ const App = (function () {
         el.classList.add('shake');
         setTimeout(() => el.classList.remove('shake'), 300);
       }
+      buzz(8); // v9: мягкий виброотклик «сюда нельзя»
       return;
     }
 
@@ -134,6 +151,7 @@ const App = (function () {
       Render.setSelected(null);
     } else if (result === 'matched') {
       Audio2.match();
+      buzz(12); // v9
       const st = Game.getState();
       const last = st.history[st.history.length - 1];
       Render.animateRemove([last.tile1, last.tile2]);
@@ -181,13 +199,16 @@ const App = (function () {
     const state = Game.getState();
     Game.markWon();
     Audio2.win();
+    buzz(40); // v9: заметный виброотклик победы
     stopTimer();
     const time = Game.getElapsedSeconds();
-    const stats = Storage.addResult({
+    Storage.addResult({
       won: true,
       score: state.score,
       time,
       pairs: state.pairsFound,
+      layoutId: state.layout.id, // v9: для бейджей «собрана N раз»
+      mode: state.mode || 'classic',
     });
     Storage.clearGame();
 
@@ -273,6 +294,9 @@ const App = (function () {
       Audio2.click();
       lastActionTime = Date.now();
       saveCurrentGame();
+    } else {
+      // v9: раньше кнопка молчала — непонятно, сработало ли
+      toast('Нечего отменять');
     }
   }
 
@@ -303,7 +327,7 @@ const App = (function () {
     timerInterval = setInterval(() => {
       if (currentScreen !== 'game') return;
       const state = Game.getState();
-      if (!state || state.ended) return;
+      if (!state || state.ended || state.paused) return; // v9: пауза не тикает
       document.getElementById('game-time').textContent = formatTime(Game.getElapsedSeconds());
     }, 1000);
   }
@@ -350,6 +374,7 @@ const App = (function () {
       id: t.id, suit: t.suit, rank: t.rank, name: t.name, face: t.face,
       x: t.x, y: t.y, z: t.z, removed: t.removed,
     }));
+    const elapsedMs = Game.getElapsedMs();
     Storage.saveGame({
       layoutId: state.layout.id,
       tiles: tilesData,
@@ -358,7 +383,11 @@ const App = (function () {
       totalPairs: state.totalPairs,
       hintsUsed: state.hintsUsed,
       shufflesUsed: state.shufflesUsed,
-      startTime: state.startTime,
+      // v9: честные часы (пауза не считается) + история отмены.
+      // startTime оставляем для отката на версии до v9.
+      startTime: Date.now() - elapsedMs,
+      elapsedMs,
+      history: Game.serializeHistory(state.history, state.tiles),
       mode: state.mode,
       endlessLevel: state.endlessLevel || 0,
     });
@@ -388,9 +417,19 @@ const App = (function () {
       state.totalPairs = saved.totalPairs || Math.floor(state.tiles.length / 2);
       state.hintsUsed = saved.hintsUsed || 0;
       state.shufflesUsed = saved.shufflesUsed || 0;
-      state.startTime = saved.startTime || Date.now();
       state.mode = saved.mode || 'classic';
       state.endlessLevel = saved.endlessLevel || 0;
+
+      // v9: время и история отмены переживают закрытие игры.
+      // Восстанавливаем ТОЛЬКО при валидном сейве: при устаревшем
+      // сейве партия начинается с нуля — и часы с историей тоже.
+      // Легаси-сейвы (до v9) не имели elapsedMs — считаем из startTime.
+      const savedElapsed = Number(saved.elapsedMs);
+      const legacyMs = (!Number.isFinite(savedElapsed) && saved.startTime)
+        ? Math.max(0, Date.now() - saved.startTime) : 0;
+      Game.setElapsedMs(Number.isFinite(savedElapsed) && savedElapsed > 0
+        ? savedElapsed : legacyMs);
+      Game.restoreHistory(saved.history);
     } else {
       // Сохранение не совпадает с раскладкой — начинаем заново,
       // вместо сломанной доски
@@ -399,7 +438,8 @@ const App = (function () {
     }
 
     state.selected = null;
-    state.history = []; // историю не сохраняем — упрощаем
+    state.history = state.history || []; // уже восстановлена, если сейв валиден
+    Game.resume(); // часы пошли заново (или с восстановленного места)
 
     Render.fitBoard(layout);
     Render.renderFull();
@@ -416,12 +456,17 @@ const App = (function () {
   function renderLayoutsGrid() {
     const grid = document.getElementById('layouts-grid');
     grid.innerHTML = '';
+    // v9: сколько раз каждая раскладка собрана — золотой бейдж на карточке
+    const winsByLayout = Storage.getStats().layouts || {};
     Layouts.all.forEach((layout, index) => {
       const card = document.createElement('button');
       card.className = 'layout-card';
       card.style.setProperty('--i', index); // v8: каскад появления карточек
+      const wins = Number(winsByLayout[layout.id]) || 0;
       card.innerHTML = `
-        <div class="layout-preview" data-layout="${layout.id}"></div>
+        <div class="layout-preview" data-layout="${layout.id}">
+          ${wins > 0 ? `<span class="layout-wins" title="Собрано раз: ${wins}">✓ ${wins}</span>` : ''}
+        </div>
         <div class="layout-info">
           <span class="layout-name">${layout.name}</span>
           <span class="layout-desc">${layout.description}</span>
@@ -461,7 +506,9 @@ const App = (function () {
     // Блок целиком (вместе с подъёмом) центрируем по вертикали
     const offsetY = (h - boardH - liftTotal) / 2 + liftTotal;
 
-    container.innerHTML = '';
+    // v9: стираем только мини-фишки — бейдж «✓ N» внутри превью
+    // должен переживать перерисовку (первый показ и resize)
+    container.querySelectorAll('.preview-tile').forEach(d => d.remove());
     // Сортируем по z, y, x — нижние рисуются раньше верхних
     const sorted = layout.positions.slice().sort((a, b) =>
       a.z - b.z || a.y - b.y || a.x - b.x);
@@ -551,16 +598,49 @@ const App = (function () {
   function openPause() {
     const state = Game.getState();
     if (!state || state.ended) return;
-    state.paused = true;
+    Game.pause(); // v9: флаг + честная остановка часов
+    // v9: сводка на карточке паузы — счёт и время видно без выхода из паузы
+    const sEl = document.getElementById('pause-score');
+    const tEl = document.getElementById('pause-time');
+    if (sEl) sEl.textContent = state.score;
+    if (tEl) tEl.textContent = formatTime(Game.getElapsedSeconds());
     document.getElementById('pause-overlay').hidden = false;
     cancelAutohint();
   }
   function closePause() {
     document.getElementById('pause-overlay').hidden = true;
-    const state = Game.getState();
-    if (state) state.paused = false;
+    Game.resume(); // v9
     lastActionTime = Date.now();
     scheduleAutohint();
+  }
+
+  // ---------- Полный экран (v9) ----------
+  // Кнопка в карточке паузы. Без поддержки API — кнопка скрывается.
+  function fullscreenAvailable() {
+    const el = document.documentElement;
+    return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+  }
+  function toggleFullscreen() {
+    const d = document;
+    const el = d.documentElement;
+    const fsEl = d.fullscreenElement || d.webkitFullscreenElement;
+    if (fsEl) {
+      const exit = d.exitFullscreen || d.webkitExitFullscreen;
+      if (exit) exit.call(d);
+    } else {
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) {
+        // Отказ (нет жеста пользователя, запрет iframe и т.п.) не роняет страницу
+        const p = req.call(el);
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+    }
+  }
+  function updateFullscreenLabel() {
+    const btn = document.getElementById('pause-fullscreen');
+    if (!btn) return;
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    btn.textContent = fsEl ? 'Обычный экран' : 'Полный экран';
   }
 
   // ---------- Ресайз ----------
@@ -641,6 +721,17 @@ const App = (function () {
 
     // Пауза
     document.getElementById('pause-resume').addEventListener('click', closePause);
+    // v9: полноэкранный режим в карточке паузы
+    const fsBtn = document.getElementById('pause-fullscreen');
+    if (fsBtn) {
+      if (fullscreenAvailable()) {
+        fsBtn.addEventListener('click', toggleFullscreen);
+        ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev =>
+          document.addEventListener(ev, updateFullscreenLabel));
+      } else {
+        fsBtn.hidden = true;
+      }
+    }
     document.getElementById('pause-restart').addEventListener('click', () => {
       const state = Game.getState();
       if (state) {

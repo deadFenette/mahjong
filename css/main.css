@@ -509,10 +509,14 @@ body[data-screen="settings"] #screen-settings {
 }
 
 .menu-stats {
-  display: flex;
+  /* v9: четыре стат-ячейки — сбалансированная сетка 2×2
+     (в один ряд с «Рекордом времени» уже тесно) */
+  display: grid;
+  grid-template-columns: repeat(2, auto);
   justify-content: center;
   align-items: center;
-  gap: 26px;
+  column-gap: 48px;
+  row-gap: 14px;
   padding: 18px 26px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -547,6 +551,8 @@ body[data-screen="settings"] #screen-settings {
   opacity: 0.6;
   font-size: 14px;
 }
+/* v9: в сетке 2×2 ромбики-разделители не нужны */
+.menu-stats .stat-separator { display: none; }
 .stat-label {
   font-size: 10px;
   color: var(--text-muted);
@@ -872,6 +878,26 @@ body[data-screen="settings"] #screen-settings {
   color: var(--text-faint);
   margin-top: 4px;
 }
+/* v9: золотой бейдж «✓ N» — сколько раз раскладка собрана.
+   Живёт в правом верхнем углу превью (превью — relative+hidden). */
+.layout-wins {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(14, 10, 6, 0.72);
+  border: 1px solid var(--accent-gold-soft);
+  color: var(--accent-gold-bright);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  line-height: 1.4;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 2;
+  pointer-events: none;
+}
 
 /* ============================================================
    СЛОЖНОСТЬ
@@ -1061,6 +1087,33 @@ body[data-screen="settings"] #screen-settings {
   margin-bottom: 12px;
   color: var(--text-main);
   font-weight: 500;
+}
+/* v9: сводка партии прямо в карточке паузы */
+.pause-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 10px 0 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.pause-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.pause-stat span {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.pause-stat strong {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ============================================================
@@ -1433,6 +1486,20 @@ body[data-screen="settings"] #screen-settings {
     radial-gradient(circle at 30% 30%, rgba(232, 200, 120, 0.3), transparent 50%),
     linear-gradient(135deg, #0a1a2a 0%, #2a5a8a 50%, #f0e8d0 100%);
 }
+/* v9: ночная тема — чёрный лак с золотой нитью и киноварной подложкой */
+.theme-preview-night {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(212, 169, 85, 0.32), transparent 50%),
+    linear-gradient(135deg, #0c0a09 0%, #1c1710 55%, #3a2218 100%);
+}
+.theme-preview-night::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(200, 32, 42, 0.28) 100%),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(212, 169, 85, 0.05) 10px, rgba(212, 169, 85, 0.05) 11px);
+}
 
 /* ============================================================
    TOAST
@@ -1502,7 +1569,7 @@ body[data-screen="settings"] #screen-settings {
   .mtile { width: 48px; height: 66px; }
   .mtile-green { height: 71px; }
   .mtile-glyph { font-size: 34px; }
-  .menu-stats { gap: 16px; padding: 14px 16px; }
+  .menu-stats { column-gap: 32px; row-gap: 10px; padding: 14px 16px; } /* v9: сетка 2×2 */
   .stat-value { font-size: 20px; }
   .btn { padding: 14px 18px; font-size: 16px; }
   .btn-hint { display: none; }
@@ -1510,4 +1577,17 @@ body[data-screen="settings"] #screen-settings {
   .win-stats { gap: 24px; }
   .win-stat strong { font-size: 26px; }
   .theme-picker, .size-picker { grid-template-columns: 1fr; }
+}
+
+/* v9: узкие экраны — шапка игры должна вместить 4 показателя
+   и 3 кнопки (на 390px кнопка undo раньше уходила за экран) */
+@media (max-width: 480px) {
+  .game-header { gap: 8px; padding: 8px 10px; }
+  .game-header .btn-icon-only { width: 36px; height: 36px; font-size: 20px; }
+  .game-info { gap: 6px; }
+  .info-block { min-width: 0; flex: 1; }
+  .info-label { font-size: 9px; letter-spacing: 0.08em; }
+  .info-value { font-size: 16px; }
+  .game-actions { gap: 4px; }
+  .game-actions .btn-action { width: 36px; height: 36px; }
 }

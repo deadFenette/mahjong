@@ -204,6 +204,11 @@
           <span class="stat-label">Лучший счёт</span>
           <span class="stat-value" id="stat-best">0</span>
         </div>
+        <div class="stat-separator" aria-hidden="true">❖</div>
+        <div class="stat">
+          <span class="stat-label">Рекорд времени</span>
+          <span class="stat-value" id="stat-best-time">—</span>
+        </div>
       </div>
 
       <!-- Подпись внизу -->
@@ -301,9 +306,15 @@
     <div class="overlay" id="pause-overlay" hidden>
       <div class="overlay-card">
         <h3>Пауза</h3>
+        <!-- v9: сводка текущей партии видна прямо в паузе -->
+        <div class="pause-stats">
+          <div class="pause-stat"><span>Счёт</span><strong id="pause-score">0</strong></div>
+          <div class="pause-stat"><span>Время</span><strong id="pause-time">0:00</strong></div>
+        </div>
         <button class="btn btn-primary" id="pause-resume">Продолжить</button>
         <button class="btn" id="pause-restart">Начать заново</button>
         <button class="btn" id="pause-new">Другая раскладка</button>
+        <button class="btn" id="pause-fullscreen">Полный экран</button>
         <button class="btn btn-ghost" id="pause-menu">В главное меню</button>
       </div>
     </div>
@@ -354,6 +365,11 @@
             <div class="theme-preview theme-preview-porcelain"></div>
             <span class="theme-name">Фарфор</span>
             <span class="theme-desc">Синь-бело, орнамент, золото</span>
+          </button>
+          <button class="theme-card" data-theme="night">
+            <div class="theme-preview theme-preview-night"></div>
+            <span class="theme-name">Ночь</span>
+            <span class="theme-desc">Чёрный лак, золото, киноварь</span>
           </button>
         </div>
       </div>
@@ -437,8 +453,8 @@
     </div>
   </section>
 
-  <!-- Toast (всплывающие сообщения) -->
-  <div id="toast" class="toast" hidden></div>
+  <!-- Toast (всплывающие сообщения) — озвучивается скринридером -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="js/tileset.js"></script>
   <script src="js/layouts.js"></script>

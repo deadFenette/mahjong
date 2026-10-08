@@ -201,3 +201,72 @@ body[data-theme="porcelain"] {
   --tile-hint-glow: rgba(232, 200, 120, 1);
   --tile-hint-glow-soft: rgba(232, 200, 120, 0.6);
 }
+
+/* ============================================================
+   4. NIGHT (v9) — чёрный лак, золото, киноварь.
+   Тёмная тема для игры вечером: стол — лакированное чёрное
+   дерево с золотой нитью, фишки — тёплая слоновая кость
+   (контраст важнее стиля — читаемость лиц не приносим).
+   ============================================================ */
+body[data-theme="night"] {
+  --bg-solid: #0c0a09;
+
+  --atm-gradient: linear-gradient(135deg, #181410 0%, #0c0a09 55%, #060504 100%);
+  --atm-pattern: radial-gradient(circle, rgba(212, 169, 85, 0.14) 1px, transparent 1.5px);
+  --atm-pattern-size: 60px 60px;
+  --atm-pattern-opacity: 0.35;
+  --atm-vignette: rgba(0, 0, 0, 0.8);
+
+  --bg-screen: linear-gradient(135deg, rgba(24, 20, 16, 0.97) 0%, rgba(10, 8, 7, 0.98) 100%);
+  --bg-header: rgba(12, 10, 9, 0.78);
+
+  --text-main: #f0e6d2;
+  --text-muted: #a89478;
+  --text-faint: #6a5a44;
+
+  --accent-gold: #d4a955;
+  --accent-gold-dark: #a87833;
+  --accent-gold-bright: #f0c878;
+  --accent-gold-soft: rgba(212, 169, 85, 0.42);
+  --accent-gold-glow: rgba(212, 169, 85, 0.65);
+
+  --border-soft: #3a2f22;
+  --card-border: #4a3a28;
+  --tile-edge: rgba(15, 12, 8, 0.65);
+  --shadow-soft: rgba(0, 0, 0, 0.3);
+  --shadow-medium: rgba(0, 0, 0, 0.5);
+  --shadow-strong: rgba(0, 0, 0, 0.75);
+
+  --btn-bg: rgba(32, 25, 18, 0.75);
+  --btn-bg-hover: rgba(50, 39, 27, 0.9);
+  --btn-border: #3a2f22;
+  --btn-text: var(--text-main);
+
+  --card-bg: rgba(32, 25, 18, 0.66);
+  --card-bg-hover: rgba(50, 39, 27, 0.88);
+  --card-bg-active: rgba(66, 51, 35, 0.92);
+
+  --preview-bg: linear-gradient(135deg, #0c0a09 0%, #1c1710 100%);
+  --preview-tile: var(--accent-gold);
+
+  /* Стол — чёрное лакированное дерево с золотой нитью */
+  --table-bg:
+    radial-gradient(circle at 30% 30%, rgba(212, 169, 85, 0.07), transparent 60%),
+    linear-gradient(135deg, #1c1410 0%, #120d0a 50%, #0a0705 100%);
+  --table-highlight: rgba(212, 169, 85, 0.13);
+  --table-shadow: rgba(0, 0, 0, 0.7);
+  --table-border: #2a2018;
+
+  /* Фишки — тёплая слоновая кость (максимальный контраст на чёрном) */
+  --tile-bg: linear-gradient(160deg, #fdf8ea 0%, #f5ecd5 40%, #e8dab8 100%);
+  --tile-border: #a89058;
+  --tile-inner-border: rgba(180, 150, 90, 0.3);
+  --tile-highlight: rgba(255, 255, 255, 0.85);
+  --tile-shadow: rgba(0, 0, 0, 0.55);
+  --tile-free-glow: rgba(212, 169, 85, 0.6);
+  --tile-free-glow-soft: rgba(212, 169, 85, 0.3);
+  --tile-hover-glow: rgba(212, 169, 85, 0.9);
+  --tile-hover-glow-soft: rgba(212, 169, 85, 0.5);
+  --tile-hint-glow: rgba(240, 200, 120, 1);
+  --tile-hint-glow-soft: rgba(240, 200, 120, 0.6);
+}

@@ -9,12 +9,15 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 - **144 canonical tiles** — dots, bamboo, characters, winds, dragons, flowers, seasons
 - **Polished animations** — cascading tile deal, matched pairs attract and dissolve with a golden spark burst, floating score popups, value-change pulses, staggered menu/card entrances, celebratory win screen
 - **Two modes** — Classic (pick a layout, clear it, win) and Endless (layouts chain one after another, score accumulates)
-- **3 themes** — Traditional (ivory, dark wood, gold), Jade (pastel marble), Porcelain (vintage blue and gold)
+- **4 themes** — Traditional (ivory, dark wood, gold), Jade (pastel marble), Porcelain (vintage blue and gold), Night (black lacquer, gold, ivory tiles)
 - **Hint, undo, shuffle** — no penalties in Endless mode; dead-end positions are reshuffled automatically
-- **Autosave** — close the tab mid-game and continue later
-- **Statistics** — games played, wins, best score
+- **Autosave** — close the tab mid-game and continue later; the undo history and the game clock survive the restart, and pause time never counts toward your result
+- **Per-layout progress** — each layout card shows how many times you have cleared it
+- **Statistics** — games played, wins, best score, best time
+- **Fullscreen mode** — one click in the pause menu (hidden where the API is unsupported)
+- **Haptic feedback** — light vibration on match and win on mobile devices
 - **Sound** — generated via the Web Audio API, no audio files
-- **Accessibility** — three tile sizes up to "Maximum" (tiles scale to fill the screen for low-vision players), configurable blocked-tile transparency (0–50%), free tiles are always opaque, `prefers-reduced-motion` supported
+- **Accessibility** — three tile sizes up to "Maximum" (tiles scale to fill the screen for low-vision players), configurable blocked-tile transparency (0–50%), free tiles are always opaque, `prefers-reduced-motion` supported, toasts announced to screen readers
 
 ## Quick start
 
@@ -37,7 +40,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 node tests/run.js
 ```
 
-305 dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, scaling math, animation math, storage, and appearance settings. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
+329 dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, scaling math, animation math, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
 
 ## Project structure
 
@@ -50,7 +53,7 @@ mahjong/
 ├── css/
 │   ├── main.css        Screens, menu, buttons
 │   ├── tiles.css       Tile rendering
-│   └── themes.css      The three themes
+│   └── themes.css      The four themes
 ├── js/
 │   ├── tileset.js      144 tiles and matching rules
 │   ├── layouts.js      The 8 layouts

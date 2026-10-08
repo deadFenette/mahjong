@@ -10,7 +10,11 @@ const Game = (function () {
   // Состояние игры
   // board: { [positionKey]: tileInstance }
   // tileInstance: { id, suit, rank, name, face, x, y, z, removed }
-  // history: [{ tile1, tile2, score }] для отмены
+  // history: [{ tile1, tile2, scoreDelta }] для отмены
+  // Игровые часы (v9): playedMs — накопленное время игры,
+  // resumedAt — метка текущего отрезка (null = часы стоят).
+  // Пауза теперь ЧЕСТНО останавливает время: раньше интервал
+  // продолжал считать секунды под оверлеем паузы.
   let state = null;
 
   // ---------- Ключ позиции в Map ----------
@@ -70,7 +74,9 @@ const Game = (function () {
       hintsUsed: 0,
       shufflesUsed: 0,
       history: [],
-      startTime: Date.now(),
+      startTime: Date.now(), // легаси (сейвы до v9); время теперь в playedMs/resumedAt
+      playedMs: 0,
+      resumedAt: Date.now(),
       endTime: null,
       paused: false,
       ended: false,
@@ -372,8 +378,66 @@ const Game = (function () {
     dst.face = src.face;
   }
 
+  // ============================================================
+  //  ИГРОВЫЕ ЧАСЫ (v9)
+  // ============================================================
+
+  // Чистая функция: суммарные секунды из накопленного времени и
+  // текущего отрезка. resumedAt = null — пауза/победа, отрезка нет.
+  // Мусор в аргументах трактуется как ноль — никогда не NaN.
+  function elapsedSecondsOf(playedMs, resumedAt, now) {
+    const played = Number(playedMs);
+    const base = Number.isFinite(played) && played > 0 ? played : 0;
+    let extra = 0;
+    if (resumedAt !== null && resumedAt !== undefined) {
+      const r = Number(resumedAt);
+      const n = Number(now);
+      if (Number.isFinite(r) && Number.isFinite(n) && n > r) extra = n - r;
+    }
+    return Math.floor((base + extra) / 1000);
+  }
+
+  function pauseClock() {
+    if (!state || state.resumedAt === null) return;
+    state.playedMs += Date.now() - state.resumedAt;
+    state.resumedAt = null;
+  }
+
+  function resumeClock() {
+    if (!state || state.resumedAt !== null) return;
+    state.resumedAt = Date.now();
+  }
+
+  // Пауза: флаг для игровой логики + остановка часов
+  function pause() {
+    if (!state || state.ended) return;
+    state.paused = true;
+    pauseClock();
+  }
+
+  function resume() {
+    if (!state || state.ended) return;
+    state.paused = false;
+    resumeClock();
+  }
+
+  // Восстановление времени из сейва (v9): секунды игры продолжаются
+  function setElapsedMs(ms) {
+    if (!state) return;
+    const n = Number(ms);
+    state.playedMs = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+    state.resumedAt = null; // resumeClock() вызовет App после загрузки
+  }
+
+  function getElapsedMs() {
+    if (!state) return 0;
+    return state.playedMs +
+      (state.resumedAt === null ? 0 : Math.max(0, Date.now() - state.resumedAt));
+  }
+
   // ---------- Завершить игру (для бесконечного — начать новый уровень) ----------
   function markWon() {
+    pauseClock(); // фиксируем финальное время — после победы часы не идут
     state.endTime = Date.now();
     state.ended = true;
   }
@@ -381,8 +445,54 @@ const Game = (function () {
   // ---------- Подсчёт времени ----------
   function getElapsedSeconds() {
     if (!state) return 0;
-    const end = state.endTime || Date.now();
-    return Math.floor((end - state.startTime) / 1000);
+    return elapsedSecondsOf(state.playedMs, state.resumedAt, Date.now());
+  }
+
+  // ============================================================
+  //  ИСТОРИЯ ХОДОВ: СЕРИАЛИЗАЦИЯ ДЛЯ СЕЙВА (v9)
+  //  Раньше после «Продолжить» отменять было нечего — история
+  //  терялась. Теперь пишем в сейв индексы пар в стабильном
+  //  массиве state.tiles (порядок никогда не меняется —
+  //  перемешивание двигает только координаты).
+  // ============================================================
+
+  // Чистая: [{tile1, tile2, scoreDelta}] → [{a, b, d}] (индексы)
+  function serializeHistory(items, tiles) {
+    const arr = Array.isArray(items) ? items : [];
+    const ts = Array.isArray(tiles) ? tiles : [];
+    return arr.map(h => ({
+      a: ts.indexOf(h && h.tile1),
+      b: ts.indexOf(h && h.tile2),
+      d: h && Number.isFinite(Number(h.scoreDelta)) ? Number(h.scoreDelta) : 10,
+    }));
+  }
+
+  // Чистая: [{a, b, d}] → [{tile1, tile2, scoreDelta}]. Мусор фильтруется:
+  // не-индексы, выход за границы, самопары — молча пропускаются.
+  function deserializeHistory(list, tiles) {
+    const ts = Array.isArray(tiles) ? tiles : [];
+    const out = [];
+    if (!Array.isArray(list)) return out;
+    list.forEach(item => {
+      if (!item || typeof item !== 'object') return;
+      const a = Number(item.a);
+      const b = Number(item.b);
+      if (!Number.isInteger(a) || !Number.isInteger(b)) return;
+      if (a < 0 || b < 0 || a >= ts.length || b >= ts.length || a === b) return;
+      const d = Number(item.d);
+      out.push({
+        tile1: ts[a],
+        tile2: ts[b],
+        scoreDelta: Number.isFinite(d) ? d : 10,
+      });
+    });
+    return out;
+  }
+
+  // Восстановить историю в текущее состояние (из сейва)
+  function restoreHistory(list) {
+    if (!state) return;
+    state.history = deserializeHistory(list, state.tiles);
   }
 
   // ---------- Получить состояние ----------
@@ -418,5 +528,15 @@ const Game = (function () {
     getElapsedSeconds,
     getState,
     key,
+    // игровые часы (v9)
+    pause,
+    resume,
+    setElapsedMs,
+    getElapsedMs,
+    elapsedSecondsOf,
+    // история отмены для сейва (v9)
+    serializeHistory,
+    deserializeHistory,
+    restoreHistory,
   };
 })();
