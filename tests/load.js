@@ -55,6 +55,7 @@ function loadGameModules({ seedStorage = true } = {}) {
     'js/music.js',
     'js/storage.js',
     'js/achievements.js',
+    'js/tutorial.js',
     'js/render.js',
     'js/game.js',
   ];
@@ -66,7 +67,7 @@ function loadGameModules({ seedStorage = true } = {}) {
   }
 
   // Экспортируем глобальные модули из области видимости скрипта
-  source += `\n;globalThis.__modules = { Tileset, Layouts, Music, Storage, Achievements, Render, Game };`;
+  source += `\n;globalThis.__modules = { Tileset, Layouts, Music, Storage, Achievements, Tutorial, Render, Game };`;
 
   vm.runInContext(source, context, { filename: 'mahjong-bundle.js' });
   return context.__modules;

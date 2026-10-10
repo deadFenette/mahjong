@@ -3,7 +3,7 @@
    Кэшируем все файлы при первой загрузке
    ============================================================ */
 
-const CACHE_NAME = 'mahjong-v13-combo';
+const CACHE_NAME = 'mahjong-v14-tutorial';
 const ASSETS = [
   './',
   './index.html',
@@ -17,6 +17,7 @@ const ASSETS = [
   './js/music.js',
   './js/storage.js',
   './js/achievements.js',
+  './js/tutorial.js',
   './js/render.js',
   './js/game.js',
   './js/app.js',

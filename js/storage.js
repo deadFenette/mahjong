@@ -17,6 +17,7 @@ const Storage = (function () {
     tileTransparency: 0, // v6: 0% — фишки плотные, ничего не просвечивает (для слабовидящих важно)
     music: true,       // v10: фоновая музыка включена по умолчанию (тихая)
     musicVolume: 35,   // v10: громкость музыки, % — «тихо и ненавязчиво»
+    tutorialSeen: false, // v12: обучение показано при первом визите
   };
 
   function getSetting(key, fallback) {

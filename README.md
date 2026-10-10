@@ -6,6 +6,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 ## Features
 
 - **8 layouts** — Pyramid, Turtle, Cross, Wall, Boat, Butterfly, Heart, Spider
+- **Built-in tutorial** — a simple 6-step "How to play" walkthrough with mini-tile diagrams (goal, matching pairs, free vs. blocked tiles, how to tell layers apart, helper buttons); opens automatically on first launch, reopens from the main menu, and the final "Play!" button starts the easy Pyramid layout
 - **144 canonical tiles** — dots, bamboo, characters, winds, dragons, flowers, seasons
 - **Generative background music** — a quiet ambient score synthesized live via the Web Audio API (no audio files); every theme has its own mood — scale, tempo, and timbre — with a toggle in Settings, a quick switch in the pause menu, a volume slider, and automatic ducking while paused
 - **Polished animations** — cascading tile deal, matched pairs attract and dissolve with a golden spark burst, floating score popups, value-change pulses, staggered menu/card entrances, golden dust rising through the main menu, celebratory win screen
@@ -43,7 +44,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 node tests/run.js
 ```
 
-368+ dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, combo math, achievements, scaling math, animation math, the music engine's pure math, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
+445+ dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, combo math, achievements, the tutorial's slide catalog and navigation, scaling math, animation math, the music engine's pure math, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
 
 ## Project structure
 
@@ -65,6 +66,7 @@ mahjong/
 │   ├── audio.js        Web Audio sound effects
 │   ├── music.js        Generative background music
 │   ├── achievements.js Achievements (pure logic)
+│   ├── tutorial.js     Tutorial walkthrough (pure logic + runtime)
 │   ├── storage.js      Settings and progress persistence
 │   ├── app.js          UI controller
 │   └── sw-register.js  Service worker registration

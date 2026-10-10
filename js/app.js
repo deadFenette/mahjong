@@ -840,6 +840,15 @@ const App = (function () {
       showScreen('settings');
     });
 
+    // v12: обучение — кнопка в меню, автопоказ при первом визите,
+    // «Играть!» на последнем шаге стартует лёгкую «Пирамиду»
+    if (typeof Tutorial !== 'undefined') {
+      Tutorial.init({ startGame: () => startClassic('pyramid') });
+      const tutBtn = document.getElementById('btn-tutorial');
+      if (tutBtn) tutBtn.addEventListener('click', () => Tutorial.open());
+      if (!Tutorial.isSeen()) Tutorial.open();
+    }
+
     // Назад
     document.getElementById('back-layouts').addEventListener('click', () => showScreen('menu'));
     document.getElementById('back-difficulty').addEventListener('click', () => showScreen('menu'));
