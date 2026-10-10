@@ -7,10 +7,19 @@
 
 const Game = (function () {
 
+  // ---------- Комбо (v11) ----------
+  // Пары, собранные подряд без паузы дольше COMBO_WINDOW_MS,
+  // наращивают серию: второй матч — ×2, третий — ×3 и т.д. до COMBO_MAX.
+  // Каждый следующий уровень серии добавляет 5 очков (comboBonusOf).
+  const COMBO_WINDOW_MS = 5000;
+  const COMBO_MAX = 8;
+
   // Состояние игры
   // board: { [positionKey]: tileInstance }
   // tileInstance: { id, suit, rank, name, face, x, y, z, removed }
-  // history: [{ tile1, tile2, scoreDelta }] для отмены
+  // history: [{ tile1, tile2, scoreDelta, combo }] для отмены
+  // combo/lastMatchAt (v11): текущая серия и момент прошлого матча
+  // undosUsed (v11): для достижения «Чистая победа»
   // Игровые часы (v9): playedMs — накопленное время игры,
   // resumedAt — метка текущего отрезка (null = часы стоят).
   // Пауза теперь ЧЕСТНО останавливает время: раньше интервал
@@ -74,6 +83,9 @@ const Game = (function () {
       hintsUsed: 0,
       shufflesUsed: 0,
       history: [],
+      combo: 0,
+      lastMatchAt: null,
+      undosUsed: 0,
       startTime: Date.now(), // легаси (сейвы до v9); время теперь в playedMs/resumedAt
       playedMs: 0,
       resumedAt: Date.now(),
@@ -151,9 +163,34 @@ const Game = (function () {
     return null;
   }
 
+  // ---------- Комбо: чистые функции (v11) ----------
+  // Множитель серии: прошлый матч был в окне → prevCombo+1 (потолок COMBO_MAX),
+  // иначе/мусор/перескок часов назад → 1.
+  function comboMultiplierFor(lastMatchAt, now, prevCombo, windowMs) {
+    const w = Number(windowMs);
+    const window = Number.isFinite(w) && w > 0 ? w : COMBO_WINDOW_MS;
+    const prev = Number(prevCombo);
+    const base = Number.isInteger(prev) && prev >= 1 ? prev : 1;
+    if (lastMatchAt === null || lastMatchAt === undefined) return 1;
+    const l = Number(lastMatchAt);
+    const n = Number(now);
+    if (!Number.isFinite(l) || !Number.isFinite(n)) return 1;
+    const diff = n - l;
+    if (diff < 0 || diff > window) return 1;
+    return Math.min(base + 1, COMBO_MAX);
+  }
+
+  // Бонус очков серии: ×1 → 0, ×2 → 5, … ×8 → 35. Мусор → 0.
+  function comboBonusOf(multiplier) {
+    const m = Number(multiplier);
+    if (!Number.isInteger(m) || m < 2) return 0;
+    return (Math.min(m, COMBO_MAX) - 1) * 5;
+  }
+
   // ---------- Выбрать фишку ----------
   // Возвращает: 'selected' | 'matched' | 'mismatched' | 'notfree'
-  function selectTile(inst) {
+  // nowMs — точка времени для тестов (по умолчанию Date.now())
+  function selectTile(inst, nowMs) {
     if (state.ended) return 'ended';
     if (!isFree(inst)) return 'notfree';
 
@@ -175,8 +212,14 @@ const Game = (function () {
       const second = inst;
       first.removed = true;
       second.removed = true;
-      state.history.push({ tile1: first, tile2: second, scoreDelta: 10 + bonusScore() });
-      state.score += 10 + bonusScore();
+      // v11: серия подряд наращивает множитель и бонус очков
+      const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+      const mult = comboMultiplierFor(state.lastMatchAt, now, state.combo);
+      state.combo = mult;
+      state.lastMatchAt = now;
+      const delta = 10 + bonusScore() + comboBonusOf(mult);
+      state.history.push({ tile1: first, tile2: second, scoreDelta: delta, combo: mult });
+      state.score += delta;
       state.pairsFound += 1;
       state.selected = null;
       return 'matched';
@@ -200,6 +243,8 @@ const Game = (function () {
   }
 
   // ---------- Отменить последний ход ----------
+  // v11: отмена сбрасывает серию (честно: откатил ход — комбо заново)
+  // и считается в undosUsed для достижения «Чистая победа»
   function undo() {
     if (state.history.length === 0) return false;
     const last = state.history.pop();
@@ -208,6 +253,9 @@ const Game = (function () {
     state.score = Math.max(0, state.score - last.scoreDelta);
     state.pairsFound = Math.max(0, state.pairsFound - 1);
     state.selected = null;
+    state.combo = 0;
+    state.lastMatchAt = null;
+    state.undosUsed += 1;
     return true;
   }
 
@@ -456,7 +504,8 @@ const Game = (function () {
   //  перемешивание двигает только координаты).
   // ============================================================
 
-  // Чистая: [{tile1, tile2, scoreDelta}] → [{a, b, d}] (индексы)
+  // Чистая: [{tile1, tile2, scoreDelta}] → [{a, b, d}] (индексы).
+  // Комбо в сейв не пишем: после «Продолжить» серия начинается заново.
   function serializeHistory(items, tiles) {
     const arr = Array.isArray(items) ? items : [];
     const ts = Array.isArray(tiles) ? tiles : [];
@@ -528,6 +577,11 @@ const Game = (function () {
     getElapsedSeconds,
     getState,
     key,
+    // комбо (v11)
+    comboMultiplierFor,
+    comboBonusOf,
+    COMBO_WINDOW_MS,
+    COMBO_MAX,
     // игровые часы (v9)
     pause,
     resume,

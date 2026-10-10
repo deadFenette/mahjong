@@ -83,6 +83,18 @@ const App = (function () {
     document.getElementById('btn-continue').hidden = !Storage.hasSavedGame();
   }
 
+  // ---------- Достижения (v11) ----------
+  // Тост по каждому новому достижению с интервалом, чтобы
+  // несколько сразу не съедали друг друга
+  function announceAchievements(ids) {
+    const list = Array.isArray(ids) ? ids : [];
+    list.forEach((id, i) => {
+      const a = Achievements.getById(id);
+      if (!a) return;
+      setTimeout(() => toast('Достижение: «' + a.name + '»'), i * 1400);
+    });
+  }
+
   // ---------- Запуск классической игры ----------
   function startClassic(layoutId) {
     const layout = Layouts.getById(layoutId);
@@ -150,10 +162,22 @@ const App = (function () {
     } else if (result === 'deselected') {
       Render.setSelected(null);
     } else if (result === 'matched') {
-      Audio2.match();
-      buzz(12); // v9
       const st = Game.getState();
       const last = st.history[st.history.length - 1];
+      // v11: серия — своя мелодия и свой всплывающий бейдж;
+      // серия ×5 приносит достижение
+      if (last && Number(last.combo) > 1) {
+        Audio2.combo(last.combo);
+        Render.spawnComboFloat('Комбо ×' + last.combo, last.tile1, last.tile2);
+        const comboUnlocked = Achievements.evaluateCombo(Storage.getStats(), last.combo);
+        if (comboUnlocked.length) {
+          Storage.unlockAchievements(comboUnlocked);
+          announceAchievements(comboUnlocked);
+        }
+      } else {
+        Audio2.match();
+      }
+      buzz(12); // v9
       Render.animateRemove([last.tile1, last.tile2]);
       Render.setSelected(null);
       // v8: над собранной парой всплывает «+N»
@@ -204,7 +228,7 @@ const App = (function () {
     const time = Game.getElapsedSeconds();
     // v10: снимаем рекорды ДО записи результата — иначе всё станет рекордом
     const prevStats = Storage.getStats();
-    Storage.addResult({
+    const statsAfter = Storage.addResult({
       won: true,
       score: state.score,
       time,
@@ -213,6 +237,18 @@ const App = (function () {
       mode: state.mode || 'classic',
     });
     Storage.clearGame();
+
+    // v11: достижения за победу — считаем по УЖЕ обновлённой статистике
+    const winUnlocked = Achievements.evaluateWin(statsAfter, {
+      hintsUsed: state.hintsUsed,
+      shufflesUsed: state.shufflesUsed,
+      undosUsed: state.undosUsed || 0,
+      timeSec: time,
+      layoutId: state.layout.id,
+      mode: state.mode || 'classic',
+      endlessLevel: state.endlessLevel || 0,
+    });
+    if (winUnlocked.length) Storage.unlockAchievements(winUnlocked);
 
     // Заполняем экран победы
     document.getElementById('win-score').textContent = state.score;
@@ -240,7 +276,31 @@ const App = (function () {
     }
 
     showScreen('win');
+    renderWinAchievements(winUnlocked); // v11
     launchWinBurst();
+  }
+
+  // ---------- Ачивки на экране победы (v11) ----------
+  // Показываем ВСЕ разблокированные; полученные в этой партии —
+  // с золотой рамкой и меткой «новое»
+  function renderWinAchievements(newIds) {
+    const box = document.getElementById('win-achievements');
+    if (!box) return;
+    box.innerHTML = '';
+    const unlocked = (Storage.getStats().achievements) || {};
+    const newSet = new Set(Array.isArray(newIds) ? newIds : []);
+    Achievements.LIST.forEach(a => {
+      if (!Object.prototype.hasOwnProperty.call(unlocked, a.id)) return;
+      const chip = document.createElement('div');
+      chip.className = 'win-ach' + (newSet.has(a.id) ? ' win-ach-new' : '');
+      chip.title = a.desc;
+      chip.innerHTML =
+        '<span class="win-ach-icon">' + a.icon + '</span>' +
+        '<span class="win-ach-name">' + a.name + '</span>' +
+        (newSet.has(a.id) ? '<span class="win-ach-tag">новое</span>' : '');
+      box.appendChild(chip);
+    });
+    box.hidden = box.childElementCount === 0;
   }
 
   function launchWinBurst() {

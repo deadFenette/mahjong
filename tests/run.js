@@ -17,6 +17,7 @@ require('./appearance.test.js');
 require('./animations.test.js');
 require('./improvements.test.js');
 require('./music.test.js');
+require('./combo.test.js');
 
 const { report } = require('./runner');
 const ok = report();

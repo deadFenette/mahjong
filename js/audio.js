@@ -56,6 +56,19 @@ const Audio2 = (function () {
     tone(783.99, 0.22, 'sine', 0.18, 0.08);  // G5
   }
 
+  // Комбо (v11) — восходящая искристая фраза; чем длиннее
+  // серия, тем выше тон. Ограничение сверху — чтобы к ×8
+  // звук оставался приятным, а не звенел.
+  function combo(mult) {
+    const m = Number(mult);
+    const level = (Number.isInteger(m) && m >= 2) ? Math.min(m, 8) : 2;
+    const k = 1 + (level - 2) * 0.06; // 1.0 … 1.36
+    tone(523.25 * k, 0.12, 'sine', 0.16);
+    tone(659.25 * k, 0.12, 'sine', 0.15, 0.05);
+    tone(783.99 * k, 0.18, 'sine', 0.17, 0.10);
+    tone(1046.5 * k, 0.26, 'sine', 0.15, 0.15);
+  }
+
   // Не совпало — мягкий "пуф"
   function mismatch() {
     tone(220, 0.1, 'sawtooth', 0.08);
@@ -92,5 +105,5 @@ const Audio2 = (function () {
   function setEnabled(v) { enabled = v; }
   function setWinEnabled(v) { winSoundEnabled = v; }
 
-  return { init, click, match, mismatch, hint, win, shuffleSound, setEnabled, setWinEnabled };
+  return { init, click, match, combo, mismatch, hint, win, shuffleSound, setEnabled, setWinEnabled };
 })();

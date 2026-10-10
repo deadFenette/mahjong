@@ -10,6 +10,8 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 - **Generative background music** — a quiet ambient score synthesized live via the Web Audio API (no audio files); every theme has its own mood — scale, tempo, and timbre — with a toggle in Settings, a quick switch in the pause menu, a volume slider, and automatic ducking while paused
 - **Polished animations** — cascading tile deal, matched pairs attract and dissolve with a golden spark burst, floating score popups, value-change pulses, staggered menu/card entrances, golden dust rising through the main menu, celebratory win screen
 - **Two modes** — Classic (pick a layout, clear it, win) and Endless (layouts chain one after another, score accumulates)
+- **Combo streaks** — clear pairs back-to-back (within 5 seconds) to build a ×2…×8 multiplier worth bonus points, with its own rising chime and a golden "Combo ×N" popup
+- **8 achievements** — from "First win" and "Clean win" (no hints, shuffles, or undos) to "Combo ×5", speed runs, and layout collections; new ones announce with a toast and appear highlighted on the win screen
 - **5 themes** — Traditional (ivory, dark wood, gold), Jade (pastel marble), Porcelain (vintage blue and gold), Night (black lacquer, gold, ivory tiles), Imperial (crimson lacquer and abundant gold)
 - **Hint, undo, shuffle** — no penalties in Endless mode; dead-end positions are reshuffled automatically
 - **Autosave** — close the tab mid-game and continue later; the undo history and the game clock survive the restart, and pause time never counts toward your result
@@ -41,7 +43,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 node tests/run.js
 ```
 
-368 dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, scaling math, animation math, the music engine's pure math, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
+368+ dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, combo math, achievements, scaling math, animation math, the music engine's pure math, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
 
 ## Project structure
 
@@ -62,6 +64,7 @@ mahjong/
 │   ├── render.js       Rendering and scaling
 │   ├── audio.js        Web Audio sound effects
 │   ├── music.js        Generative background music
+│   ├── achievements.js Achievements (pure logic)
 │   ├── storage.js      Settings and progress persistence
 │   ├── app.js          UI controller
 │   └── sw-register.js  Service worker registration

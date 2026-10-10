@@ -38,8 +38,12 @@ const Storage = (function () {
   // ---------- Статистика ----------
   // layouts (v9): { [layoutId]: сколько раз раскладка собрана } —
   // на карточках галереи рисуется бейдж «✓ N»
+  // achievements (v11): { [achievementId]: timestamp разблокировки }
   function emptyStats() {
-    return { played: 0, won: 0, bestScore: 0, bestTime: null, totalPairs: 0, layouts: {} };
+    return {
+      played: 0, won: 0, bestScore: 0, bestTime: null,
+      totalPairs: 0, layouts: {}, achievements: {},
+    };
   }
 
   function getStats() {
@@ -50,6 +54,10 @@ const Storage = (function () {
       // Легаси-статистика без поля layouts чинится на лету
       if (!s.layouts || typeof s.layouts !== 'object' || Array.isArray(s.layouts)) {
         s.layouts = {};
+      }
+      // v11: то же для достижений
+      if (!s.achievements || typeof s.achievements !== 'object' || Array.isArray(s.achievements)) {
+        s.achievements = {};
       }
       return s;
     } catch (e) {
@@ -83,6 +91,24 @@ const Storage = (function () {
     setStats(emptyStats());
   }
 
+  // ---------- Достижения (v11) ----------
+  // Разблокировать список id (дубликаты и мусор молча пропускаются).
+  // Возвращает обновлённую статистику.
+  function unlockAchievements(ids) {
+    const s = getStats();
+    const list = Array.isArray(ids) ? ids : [];
+    let changed = false;
+    list.forEach(id => {
+      if (typeof id === 'string' && id &&
+          !Object.prototype.hasOwnProperty.call(s.achievements, id)) {
+        s.achievements[id] = Date.now();
+        changed = true;
+      }
+    });
+    if (changed) setStats(s);
+    return s;
+  }
+
   // ---------- Текущая игра (для "Продолжить") ----------
   function saveGame(stateData) {
     try {
@@ -113,6 +139,7 @@ const Storage = (function () {
     setStats,
     addResult,
     resetStats,
+    unlockAchievements,
     saveGame,
     loadGame,
     clearGame,

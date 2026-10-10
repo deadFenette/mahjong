@@ -496,6 +496,27 @@ const Render = (function () {
     setTimeout(() => el.remove(), 1100);
   }
 
+  // ---------- Всплывающее «Комбо ×N» (v11) ----------
+  // Крупнее и наряднее «+N»: золотой градиент, свечение,
+  // поднимается выше. Встает чуть выше пары, чтобы не
+  // сталкиваться с +N, который появляется одновременно.
+  function spawnComboFloat(text, tileA, tileB) {
+    if (!boardEl || !tileA) return;
+    const point = tileB
+      ? midpointOf(tileA, tileB)
+      : (() => {
+          const p = tilePosition(tileA, { w: tileSize.w, h: tileSize.h, gap, zLift });
+          return { x: p.left + tileSize.w / 2, y: p.top + tileSize.h / 2 };
+        })();
+    const el = document.createElement('div');
+    el.className = 'combo-float';
+    el.textContent = text;
+    el.style.left = point.x + 'px';
+    el.style.top = (point.y - tileSize.h * 0.7) + 'px';
+    boardEl.appendChild(el);
+    setTimeout(() => el.remove(), 1600);
+  }
+
   // ---------- Каскадная раздача фишек (v8) ----------
   // Вызывается после renderFull на старте партии, перемешивании
   // и отмене хода. opts.fast — укороченный вариант (для undo).
@@ -597,6 +618,7 @@ const Render = (function () {
     // анимации (v8)
     playDealAnimation,
     spawnScoreFloat,
+    spawnComboFloat,
     spawnSparks,
     pulseTable,
     dealDelayFor,
