@@ -42,11 +42,21 @@ const Game = (function () {
 
     // Берём подмножество фишек из полного тайлсета так, чтобы получилось чётное число
     // и количество совпадало с позициями
+    // v13 (фикс «последние 2 фишки не убрать»): у раскладок больше 144 фишек
+    // (Черепаха 156, Стена 188, Крест 202) пул дублируется, и у копий
+    // оказывался ТОТ ЖЕ id, что у оригинала. Две такие фишки-близнецы
+    // выглядят одинаково, но Tileset.isMatch отвечает false (защита
+    // «a.id === b.id» считала их одной фишкой) — в эндшпиле это давало
+    // НЕУСТРАНИМЫЙ тупик, который не чинило даже перемешивание.
+    // Теперь каждый дубликат пула получает свежий уникальный id.
     let pool = Tileset.tiles.slice();
 
     pool = shuffle(pool, seed);
     if (count > pool.length) {
-      while (pool.length < count) pool = pool.concat(Tileset.tiles.slice());
+      while (pool.length < count) {
+        const base = Tileset.tiles.slice();
+        for (const t of base) pool.push({ ...t, id: pool.length });
+      }
     }
     const usedTiles = pool.slice(0, count);
 

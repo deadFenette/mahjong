@@ -212,9 +212,9 @@ suite('Обучение — стили main.css', () => {
 
 // ============================================================
 suite('Обучение — Service Worker', () => {
-  test('кэш переименован под v12 (tutorial)', () => {
-    assertOk(swJs.includes('mahjong-v14-tutorial'), 'CACHE_NAME обновлён');
-    assertOk(!swJs.includes('mahjong-v13-combo'), 'старое имя кэша убрано');
+  test('кэш именуется по версии и обновляется (v15+)', () => {
+    assertOk(/mahjong-v\d+/.test(swJs), 'CACHE_NAME задан и версионирован');
+    assertOk(!swJs.includes('mahjong-v14-tutorial'), 'старое имя кэша убрано');
   });
 
   test('tutorial.js попадает в офлайн-кэш', () => {

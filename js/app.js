@@ -136,6 +136,34 @@ const App = (function () {
     saveCurrentGame();
   }
 
+  // ---------- Гарантия наличия ходов (v13) ----------
+  // Тупик мог возникать не только после матча: сейв писался ДО
+  // отложенного (600мс) авто-перемешивания и не обновлялся после
+  // него — закрыв игру сразу после перемешивания, игрок сохранял
+  // ТУПИКОВУЮ доску. При загрузке сейва тупик вообще не проверялся.
+  // Теперь одна проверка на все случаи: после матча, после отмены
+  // и после загрузки сейва. Нет ходов — через 600мс (дать анимации
+  // матча доиграть) перемешиваем и ОБЯЗАТЕЛЬНО пересохраняем доску.
+  function ensureMovesAvailable() {
+    const state = Game.getState();
+    if (!state || state.ended) return;
+    if (Game.hasAnyMove()) return;
+
+    toast('Ходов больше нет — перемешиваем');
+    const stateAtSchedule = state; // за 600мс могли начать новую партию
+    setTimeout(() => {
+      if (Game.getState() !== stateAtSchedule) return;
+      Game.shuffleBoard(false);
+      Render.renderFull();
+      Render.playDealAnimation(); // v8: каскадная раздача
+      Render.pulseTable();        // v8: стол вздрагивает
+      Render.highlightFree(Storage.getSetting('highlight', true));
+      updateGameInfo();
+      Audio2.shuffleSound();
+      saveCurrentGame(); // v13: починенная доска попадает в сейв
+    }, 600);
+  }
+
   // ---------- Обработка клика по фишке ----------
   function onTileClick(tile) {
     if (currentScreen !== 'game') return;
@@ -195,20 +223,8 @@ const App = (function () {
         handleWin();
         return;
       }
-      // Проверка тупика
-      if (!Game.hasAnyMove()) {
-        // В тупике — перемешать автоматически
-        toast('Ходов больше нет — перемешиваем');
-        setTimeout(() => {
-          Game.shuffleBoard(false);
-          Render.renderFull();
-          Render.playDealAnimation(); // v8
-          Render.pulseTable();        // v8: стол вздрагивает
-          Render.highlightFree(Storage.getSetting('highlight', true));
-          updateGameInfo();
-          Audio2.shuffleSound();
-        }, 600);
-      }
+      // v13: проверка тупика — общая с загрузкой сейва и отменой
+      ensureMovesAvailable();
       saveCurrentGame();
     } else if (result === 'mismatched') {
       Audio2.mismatch();
@@ -361,6 +377,9 @@ const App = (function () {
       Render.playDealAnimation({ fast: true }); // v8: фишки быстро возвращаются
       Render.highlightFree(Storage.getSetting('highlight', true));
       updateGameInfo();
+      // v13: единая проверка тупика (после отмены ход есть всегда,
+      // но проверка дешёвая и спасает от вырожденных сейвов)
+      ensureMovesAvailable();
       Audio2.click();
       lastActionTime = Date.now();
       saveCurrentGame();
@@ -510,6 +529,10 @@ const App = (function () {
     state.selected = null;
     state.history = state.history || []; // уже восстановлена, если сейв валиден
     Game.resume(); // часы пошли заново (или с восстановленного места)
+
+    // v13: сейв мог быть сохранён в тупике (см. ensureMovesAvailable) —
+    // после восстановления сразу гарантируем наличие ходов
+    ensureMovesAvailable();
 
     Render.fitBoard(layout);
     Render.renderFull();

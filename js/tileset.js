@@ -249,7 +249,13 @@ const Tileset = (function () {
   }
 
   function isMatch(a, b) {
-    if (!a || !b || a.id === b.id) return false;
+    // v13: защита от «партии с самим собой» — по ССЫЛКЕ на объект,
+    // а не по id. Раньше сравнивался id: у раскладок >144 фишек пул
+    // дублируется, у двух РАЗНЫХ экземпляров одной фишки оказывался
+    // один id — и они не могли собраться никогда (вечный тупик
+    // «последние 2 фишки не убрать»). Сравнение по ссылке чинит и
+    // старые сейвы, где дубликаты id уже сохранены.
+    if (!a || !b || a === b) return false;
     if (a.suit === 'flowers' && b.suit === 'flowers') return true;
     if (a.suit === 'seasons' && b.suit === 'seasons') return true;
     return a.suit === b.suit && a.rank === b.rank;

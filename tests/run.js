@@ -19,6 +19,7 @@ require('./improvements.test.js');
 require('./music.test.js');
 require('./combo.test.js');
 require('./tutorial.test.js');
+require('./endgame.test.js');
 
 const { report } = require('./runner');
 const ok = report();

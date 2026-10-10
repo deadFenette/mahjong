@@ -44,7 +44,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 node tests/run.js
 ```
 
-445+ dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, combo math, achievements, the tutorial's slide catalog and navigation, scaling math, animation math, the music engine's pure math, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
+477+ dependency-free assertions (Node.js only) cover layouts, the tile set, game logic, combo math, achievements, the tutorial's slide catalog and navigation, endgame solvability (unique tile ids on oversized layouts and auto-recovery from deadlocked boards), scaling math, animation math, the music engine's pure math, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
 
 ## Project structure
 
