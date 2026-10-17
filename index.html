@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a0f0a" />
+  <title>Маджонг</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <!-- v20-offline: шрифты самохостятся локально (css/fonts.css).
+       Раньше тянулись онлайн с Google Fonts — в офлайне срабатывал
+       системный фолбэк, и тема визуально проседала. -->
+  <link rel="stylesheet" href="css/fonts.css" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/tiles.css" />
+  <link rel="stylesheet" href="css/menu.css" />
+  <link rel="stylesheet" href="css/themes.css" />
+</head>
+<body data-theme="traditional" data-screen="menu">
+
+  <!-- ============= Фоновые слои атмосферы ============= -->
+  <div class="atmosphere" aria-hidden="true">
+    <div class="atmosphere-gradient"></div>
+    <div class="atmosphere-pattern"></div>
+    <div class="atmosphere-vignette"></div>
+  </div>
+
+  <!-- ============= ГЛАВНОЕ МЕНЮ (v14) =============
+       Заголовок — две настоящие фишки 麻 и 將, меню — «стойка» с фишками
+       (как у игрока за столом). Цвета берутся из темы. -->
+  <section id="screen-menu" class="screen" data-name="menu">
+    <div class="menu-dust" aria-hidden="true" id="menu-dust"></div>
+
+    <!-- v18: декоративные элементы вокруг меню — фонарики, угловые орнаменты,
+         бамбуковая роща внизу, плывущие облака. Лежат за меню (z-index: 1)
+         и не закрывают существующие элементы. -->
+    <div class="menu-decor" aria-hidden="true">
+      <!-- Угловые облака «жуйнь» — стилизованные спирали удачи -->
+      <svg class="menu-decor-cloud menu-decor-cloud-tl" viewBox="0 0 120 80">
+        <path d="M10 60 Q 25 35, 50 45 Q 65 30, 85 50 Q 100 35, 110 60 Q 90 70, 70 60 Q 50 75, 30 60 Q 15 70, 10 60 Z"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+        <path d="M40 50 Q 50 42, 60 50 Q 65 45, 70 50" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+      </svg>
+      <svg class="menu-decor-cloud menu-decor-cloud-tr" viewBox="0 0 120 80">
+        <path d="M10 60 Q 25 35, 50 45 Q 65 30, 85 50 Q 100 35, 110 60 Q 90 70, 70 60 Q 50 75, 30 60 Q 15 70, 10 60 Z"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.55" transform="scale(-1,1) translate(-120,0)"/>
+        <path d="M40 50 Q 50 42, 60 50 Q 65 45, 70 50" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4" transform="scale(-1,1) translate(-120,0)"/>
+      </svg>
+
+      <!-- Подвесные шёлковые фонарики по углам -->
+      <div class="menu-lantern menu-lantern-l">
+        <div class="lantern-cap"></div>
+        <div class="lantern-body">
+          <span class="lantern-glyph" lang="zh">福</span>
+        </div>
+        <div class="lantern-tassel"></div>
+      </div>
+      <div class="menu-lantern menu-lantern-r">
+        <div class="lantern-cap"></div>
+        <div class="lantern-body">
+          <span class="lantern-glyph" lang="zh">寿</span>
+        </div>
+        <div class="lantern-tassel"></div>
+      </div>
+
+      <!-- Бамбуковая роща силуэтом внизу -->
+      <svg class="menu-bamboo" viewBox="0 0 600 200" preserveAspectRatio="xMidYMax slice">
+        <g opacity="0.35" fill="currentColor">
+          <!-- Стебли бамбука -->
+          <rect x="50"  y="20" width="4" height="180" rx="2"/>
+          <rect x="120" y="50" width="3" height="150" rx="1.5"/>
+          <rect x="190" y="30" width="4" height="170" rx="2"/>
+          <rect x="380" y="40" width="4" height="160" rx="2"/>
+          <rect x="460" y="60" width="3" height="140" rx="1.5"/>
+          <rect x="540" y="35" width="4" height="165" rx="2"/>
+          <!-- Узлы стеблей -->
+          <rect x="48"  y="60"  width="8" height="2"/>
+          <rect x="48"  y="110" width="8" height="2"/>
+          <rect x="48"  y="160" width="8" height="2"/>
+          <rect x="118" y="90"  width="7" height="2"/>
+          <rect x="118" y="140" width="7" height="2"/>
+          <rect x="188" y="75"  width="8" height="2"/>
+          <rect x="188" y="125" width="8" height="2"/>
+          <rect x="188" y="170" width="8" height="2"/>
+          <rect x="378" y="80"  width="8" height="2"/>
+          <rect x="378" y="130" width="8" height="2"/>
+          <rect x="458" y="100" width="7" height="2"/>
+          <rect x="538" y="75"  width="8" height="2"/>
+          <rect x="538" y="125" width="8" height="2"/>
+        </g>
+        <!-- Листья бамбука — узкие треугольники -->
+        <g opacity="0.45" fill="currentColor">
+          <path d="M55 30 Q 70 22, 78 30 Q 70 38, 55 30 Z"/>
+          <path d="M55 30 Q 50 18, 60 12 Q 65 22, 55 30 Z"/>
+          <path d="M125 60 Q 138 52, 145 60 Q 138 68, 125 60 Z"/>
+          <path d="M125 60 Q 120 48, 130 42 Q 135 52, 125 60 Z"/>
+          <path d="M195 40 Q 210 32, 218 40 Q 210 48, 195 40 Z"/>
+          <path d="M195 40 Q 188 28, 200 22 Q 206 32, 195 40 Z"/>
+          <path d="M385 50 Q 400 42, 408 50 Q 400 58, 385 50 Z"/>
+          <path d="M385 50 Q 378 38, 390 32 Q 396 42, 385 50 Z"/>
+          <path d="M465 70 Q 478 62, 485 70 Q 478 78, 465 70 Z"/>
+          <path d="M545 45 Q 560 37, 568 45 Q 560 53, 545 45 Z"/>
+          <path d="M545 45 Q 538 33, 550 27 Q 556 37, 545 45 Z"/>
+        </g>
+      </svg>
+
+      <!-- Маленькие красные печати-штампы в углах -->
+      <svg class="menu-seal-decor menu-seal-decor-bl" viewBox="0 0 40 40" aria-hidden="true">
+        <rect x="2" y="2" width="36" height="36" rx="2" fill="#c8202a" opacity="0.85"/>
+        <rect x="5" y="5" width="30" height="30" rx="1" fill="none" stroke="#fdf8ea" stroke-width="1" opacity="0.8"/>
+        <text x="20" y="26" text-anchor="middle" font-size="16" font-weight="900"
+              fill="#fdf8ea" font-family="'Ma Shan Zheng', 'Noto Serif SC', serif">禄</text>
+      </svg>
+      <svg class="menu-seal-decor menu-seal-decor-br" viewBox="0 0 40 40" aria-hidden="true">
+        <rect x="2" y="2" width="36" height="36" rx="2" fill="#c8202a" opacity="0.85"/>
+        <rect x="5" y="5" width="30" height="30" rx="1" fill="none" stroke="#fdf8ea" stroke-width="1" opacity="0.8"/>
+        <text x="20" y="26" text-anchor="middle" font-size="16" font-weight="900"
+              fill="#fdf8ea" font-family="'Ma Shan Zheng', 'Noto Serif SC', serif">禧</text>
+      </svg>
+    </div>
+
+    <div class="menu-inner">
+
+      <header class="menu-title">
+        <div class="menu-moon" aria-hidden="true"></div>
+        <span class="menu-inscription" aria-hidden="true" lang="zh"><span>静</span><span>心</span><span>博</span><span>弈</span></span>
+        <h1 class="title">
+          <span class="title-tiles" aria-hidden="true">
+            <span class="title-tile" style="--r:-3deg; --d:0s"><span class="title-glyph ink-black">麻</span></span>
+            <span class="title-tile" style="--r:2.5deg; --d:0.12s"><span class="title-glyph ink-red">將</span></span>
+          </span>
+          <span class="title-sub">Маджонг</span>
+        </h1>
+        <svg class="menu-seal" viewBox="0 0 60 60" aria-hidden="true">
+          <rect x="6" y="6" width="48" height="48" rx="3" fill="#c8202a" stroke="#7a1420" stroke-width="1"/>
+          <rect x="10" y="10" width="40" height="40" rx="2" fill="none" stroke="#fdf8ea" stroke-width="1" opacity="0.8"/>
+          <text x="30" y="38" text-anchor="middle" font-size="22" font-weight="900"
+                fill="#fdf8ea" font-family="'Ma Shan Zheng', 'Noto Serif SC', serif">福</text>
+        </svg>
+      </header>
+
+      <button class="menu-continue" id="btn-continue" hidden>
+        <span class="mc-glyph" aria-hidden="true" lang="zh">續</span>
+        <span class="mc-text">
+          <span class="mc-label">Продолжить партию</span>
+          <span class="mc-hint">Вернуться к начатой игре</span>
+        </span>
+      </button>
+
+      <nav class="rack" aria-label="Главное меню">
+        <button class="menu-tile" id="btn-classic" style="--i:0; --ink:#c8202a">
+          <span class="mt-glyph" aria-hidden="true" lang="zh">勝</span>
+          <span class="mt-label">Победа</span>
+          <span class="mt-hint">Выбрать раскладку</span>
+        </button>
+        <button class="menu-tile" id="btn-endless" style="--i:1; --ink:#1f7a3a">
+          <span class="mt-glyph" aria-hidden="true" lang="zh">永</span>
+          <span class="mt-label">Бесконечный</span>
+          <span class="mt-hint">Играй сколько хочешь</span>
+        </button>
+        <button class="menu-tile" id="btn-daily" style="--i:2; --ink:#d4a955">
+          <span class="mt-glyph" aria-hidden="true" lang="zh">日</span>
+          <span class="mt-label">Ежедневный</span>
+          <span class="mt-hint">Одна раскладка на всех — на сегодня</span>
+        </button>
+        <button class="menu-tile" id="btn-mix" style="--i:3; --ink:#7a3a9a">
+          <span class="mt-glyph" aria-hidden="true" lang="zh">混</span>
+          <span class="mt-label">Микс</span>
+          <span class="mt-hint">Две раскладки бок о бок — случайно</span>
+        </button>
+        <button class="menu-tile" id="btn-tutorial" style="--i:4; --ink:#1a1a1a">
+          <span class="mt-glyph" aria-hidden="true" lang="zh">學</span>
+          <span class="mt-label">Обучение</span>
+          <span class="mt-hint">Как играть — 1 минута</span>
+        </button>
+        <button class="menu-tile" id="btn-settings" style="--i:5; --ink:#1a3a5a">
+          <span class="mt-glyph" aria-hidden="true" lang="zh">設</span>
+          <span class="mt-label">Настройки</span>
+          <span class="mt-hint">Темы, размер, звук</span>
+        </button>
+      </nav>
+
+      <div class="menu-stats">
+        <div class="stat">
+          <span class="stat-label">Сыграно</span>
+          <span class="stat-value" id="stat-played">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Побед</span>
+          <span class="stat-value" id="stat-won">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Лучший счёт</span>
+          <span class="stat-value" id="stat-best">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Рекорд времени</span>
+          <span class="stat-value" id="stat-best-time">—</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============= ВЫБОР РАСКЛАДКИ ============= -->
+  <section id="screen-layouts" class="screen" data-name="layouts">
+    <header class="screen-header">
+      <button class="btn-icon-only" id="back-layouts" aria-label="Назад">←</button>
+      <h2 class="screen-title">Выберите раскладку</h2>
+    </header>
+    <div class="layouts-grid" id="layouts-grid"></div>
+  </section>
+
+  <!-- ============= ВЫБОР СЛОЖНОСТИ ============= -->
+  <section id="screen-difficulty" class="screen" data-name="difficulty">
+    <header class="screen-header">
+      <button class="btn-icon-only" id="back-difficulty" aria-label="Назад">←</button>
+      <h2 class="screen-title">Бесконечный режим</h2>
+    </header>
+    <div class="difficulty-list">
+      <button class="card difficulty-card" data-difficulty="easy" style="--i:0">
+        <div class="card-icon">🌿</div>
+        <div class="card-body">
+          <div class="card-title">Спокойный</div>
+          <div class="card-desc">Маленькие раскладки, подсказки частые</div>
+        </div>
+      </button>
+      <button class="card difficulty-card" data-difficulty="normal" style="--i:1">
+        <div class="card-icon">🎋</div>
+        <div class="card-body">
+          <div class="card-title">Классический</div>
+          <div class="card-desc">Знакомые раскладки, всё как обычно</div>
+        </div>
+      </button>
+      <button class="card difficulty-card" data-difficulty="hard" style="--i:2">
+        <div class="card-icon">🍁</div>
+        <div class="card-body">
+          <div class="card-title">Большой</div>
+          <div class="card-desc">Большие раскладки, дольше игра</div>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============= ИГРОВОЙ ЭКРАН ============= -->
+  <section id="screen-game" class="screen" data-name="game">
+    <header class="game-header">
+      <button class="btn-icon-only" id="game-menu" aria-label="Меню">≡</button>
+      <div class="game-info">
+        <div class="info-block">
+          <span class="info-label">Счёт</span>
+          <span class="info-value" id="game-score">0</span>
+        </div>
+        <div class="info-block">
+          <span class="info-label">Пары</span>
+          <span class="info-value" id="game-pairs">0/0</span>
+        </div>
+        <div class="info-block">
+          <span class="info-label">Ходов</span>
+          <span class="info-value" id="game-moves">0</span>
+        </div>
+        <div class="info-block">
+          <span class="info-label">Время</span>
+          <span class="info-value" id="game-time">0:00</span>
+        </div>
+      </div>
+      <div class="game-actions">
+        <button class="btn-action" id="btn-zoom" title="Размер фишек (+ / −)" aria-label="Размер фишек">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l6 6M10 7v6M7 10h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="btn-action" id="btn-hint" title="Подсказка (H)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.7V18a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3.3c1.8-1.2 3-3.3 3-5.7a7 7 0 0 0-7-7m-1 19h2v2h-2z"/></svg>
+        </button>
+        <button class="btn-action" id="btn-shuffle" title="Перемешать (S)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M14 20v-2h2.6l-3.2-3.2 1.4-1.4L18 16.6V14h2v6zM6.6 6H4V4h6v6H8V7.4l3.2 3.2-1.4 1.4L6.6 6m9.4 0V4h2v6h-6V8h2.6l-3.2-3.2 1.4-1.4z"/></svg>
+        </button>
+        <button class="btn-action" id="btn-undo" title="Отменить (Z)">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12.5 8c-2.6 0-5 1-6.9 2.6L2 7v9h9l-3.6-3.6c1.4-1.2 3.2-2 5.1-2 3.9 0 7.1 3.2 7.1 7.1 0 .8-.1 1.5-.4 2.2 1.2-1.5 1.8-3.3 1.8-5.2C21 11.9 17.1 8 12.5 8"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="board-stage" id="board-stage">
+
+      <!-- v18: боковые декорации игрового поля — вертикальные свитки
+           с каллиграфией слева и справа от доски. Лежат за столом
+           (z-index: 0) и не мешают кликам по фишкам. На узких экранах
+           скрываются. -->
+      <div class="board-side-decor board-side-decor-l" aria-hidden="true">
+        <div class="side-scroll-top"></div>
+        <div class="side-scroll-body">
+          <span class="side-glyph" lang="zh">和</span>
+          <span class="side-glyph" lang="zh">平</span>
+          <span class="side-glyph" lang="zh">安</span>
+          <span class="side-glyph" lang="zh">康</span>
+        </div>
+        <div class="side-scroll-bottom"></div>
+      </div>
+
+      <div class="board-side-decor board-side-decor-r" aria-hidden="true">
+        <div class="side-scroll-top"></div>
+        <div class="side-scroll-body">
+          <span class="side-glyph" lang="zh">福</span>
+          <span class="side-glyph" lang="zh">禄</span>
+          <span class="side-glyph" lang="zh">寿</span>
+          <span class="side-glyph" lang="zh">喜</span>
+        </div>
+        <div class="side-scroll-bottom"></div>
+      </div>
+
+      <!-- Деревянная подложка-стол -->
+      <div class="board-table" id="board-table">
+        <!-- v18: угловые кисточки-висюльки на столе -->
+        <span class="board-tassel board-tassel-tl" aria-hidden="true"></span>
+        <span class="board-tassel board-tassel-tr" aria-hidden="true"></span>
+        <span class="board-tassel board-tassel-bl" aria-hidden="true"></span>
+        <span class="board-tassel board-tassel-br" aria-hidden="true"></span>
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+
+    <!-- Мини-меню во время игры -->
+    <div class="overlay" id="pause-overlay" hidden>
+      <div class="overlay-card">
+        <h3>Пауза</h3>
+        <!-- v9: сводка текущей партии видна прямо в паузе -->
+        <div class="pause-stats">
+          <div class="pause-stat"><span>Счёт</span><strong id="pause-score">0</strong></div>
+          <div class="pause-stat"><span>Время</span><strong id="pause-time">0:00</strong></div>
+        </div>
+        <button class="btn btn-primary" id="pause-resume">Продолжить</button>
+        <button class="btn" id="pause-restart">Начать заново</button>
+        <button class="btn" id="pause-new">Другая раскладка</button>
+        <button class="btn" id="pause-fullscreen">Полный экран</button>
+        <!-- v10: быстрый выключатель фоновой музыки -->
+        <button class="btn" id="pause-music">Музыка: вкл</button>
+        <button class="btn btn-ghost" id="pause-menu">В главное меню</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= ЭКРАН ПОБЕДЫ ============= -->
+  <section id="screen-win" class="screen" data-name="win">
+    <div class="win-inner">
+      <div class="win-glow"></div>
+      <div class="win-burst" id="win-burst"></div>
+      <h2 class="win-title">Победа!</h2>
+      <!-- v10: золотой бейдж «Новый рекорд!» — счёт или время лучше прежних -->
+      <div class="win-record" id="win-record" hidden>Новый рекорд!</div>
+      <p class="win-subtitle" id="win-text">Вы собрали все пары!</p>
+      <div class="win-stats">
+        <div class="win-stat"><span>Счёт</span><strong id="win-score">0</strong></div>
+        <div class="win-stat"><span>Время</span><strong id="win-time">0:00</strong></div>
+        <div class="win-stat"><span>Подсказок</span><strong id="win-hints">0</strong></div>
+      </div>
+      <!-- v11: ачивки — все разблокированные, свежие подсвечены -->
+      <div class="win-achievements" id="win-achievements" hidden></div>
+      <div class="win-actions">
+        <button class="btn btn-primary" id="win-again">Ещё раз</button>
+        <button class="btn" id="win-next" hidden>Следующая →</button>
+        <button class="btn btn-ghost" id="win-menu">В меню</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= НАСТРОЙКИ ============= -->
+  <section id="screen-settings" class="screen" data-name="settings">
+    <header class="screen-header">
+      <button class="btn-icon-only" id="back-settings" aria-label="Назад">←</button>
+      <h2 class="screen-title">Настройки</h2>
+    </header>
+    <div class="settings-list">
+
+      <div class="setting-group">
+        <h3 class="setting-title">Оформление</h3>
+        <div class="theme-picker">
+          <button class="theme-card" data-theme="traditional">
+            <div class="theme-preview theme-preview-traditional"></div>
+            <span class="theme-name">Традиционный</span>
+            <span class="theme-desc">Слоновая кость, дерево, золото</span>
+          </button>
+          <button class="theme-card" data-theme="jade">
+            <div class="theme-preview theme-preview-jade"></div>
+            <span class="theme-name">Нефрит</span>
+            <span class="theme-desc">Пастель, мрамор, мягкость</span>
+          </button>
+          <button class="theme-card" data-theme="porcelain">
+            <div class="theme-preview theme-preview-porcelain"></div>
+            <span class="theme-name">Фарфор</span>
+            <span class="theme-desc">Синь-бело, орнамент, золото</span>
+          </button>
+          <button class="theme-card" data-theme="night">
+            <div class="theme-preview theme-preview-night"></div>
+            <span class="theme-name">Ночь</span>
+            <span class="theme-desc">Чёрный лак, золото, киноварь</span>
+          </button>
+          <button class="theme-card" data-theme="imperial">
+            <div class="theme-preview theme-preview-imperial"></div>
+            <span class="theme-name">Император</span>
+            <span class="theme-desc">Багровый лак, много золота</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <h3 class="setting-title">Скин фишек</h3>
+        <div class="skin-picker">
+          <button class="skin-card active" data-skin="classic">
+            <span class="skin-name">Классический</span>
+            <span class="skin-desc">Чистый минимализм, без рамок</span>
+          </button>
+          <button class="skin-card" data-skin="ornate">
+            <span class="skin-name">Богатый</span>
+            <span class="skin-desc">Золотая гравировка и орнаменты</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <h3 class="setting-title">Размер фишек</h3>
+        <div class="size-picker">
+          <button class="size-card" data-size="tiny">
+            <span class="size-name">Микро</span>
+            <span class="size-desc">Компактно, вся доска перед глазами</span>
+          </button>
+          <button class="size-card" data-size="small">
+            <span class="size-name">Маленькие</span>
+            <span class="size-desc">Чётко и просторно</span>
+          </button>
+          <button class="size-card" data-size="medium">
+            <span class="size-name">Средние</span>
+            <span class="size-desc">Сбалансированный размер</span>
+          </button>
+          <button class="size-card active" data-size="large">
+            <span class="size-name">Крупные</span>
+            <span class="size-desc">Фишки занимают весь экран</span>
+          </button>
+          <button class="size-card" data-size="xl">
+            <span class="size-name">Огромные</span>
+            <span class="size-desc">Сверхкрупно, максимальная читаемость</span>
+          </button>
+        </div>
+
+        <div class="setting-block">
+          <div class="setting-row range-row">
+            <span class="setting-label">
+              <span class="setting-name">Прозрачность фишек</span>
+              <span class="setting-desc">0% — фишки плотные, ничего не просвечивает сквозь слои. Больше — закрытые фишки словно стеклянные</span>
+            </span>
+            <output class="range-output" id="setting-tile-transparency-out" for="setting-tile-transparency">0%</output>
+          </div>
+          <input type="range" class="range-slider" id="setting-tile-transparency"
+                 min="0" max="50" step="5" value="0"
+                 aria-label="Прозрачность закрытых фишек" />
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <h3 class="setting-title">Помощь</h3>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Подсветка доступных фишек</span>
+            <span class="setting-desc">Свечение вокруг фишек, которые можно убрать</span>
+          </span>
+          <input type="checkbox" id="setting-highlight" class="toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Автоподсказка</span>
+            <span class="setting-desc">Если 15 секунд бездействия — мигнёт доступная пара</span>
+          </span>
+          <input type="checkbox" id="setting-autohint" class="toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <h3 class="setting-title">Музыка</h3>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Фоновая музыка</span>
+            <span class="setting-desc">Тихая живая мелодия — у каждой темы свой лад</span>
+          </span>
+          <input type="checkbox" id="setting-music" class="toggle" checked />
+          <span class="toggle-switch"></span>
+        </label>
+        <div class="setting-block">
+          <div class="setting-row range-row">
+            <span class="setting-label">
+              <span class="setting-name">Громкость музыки</span>
+              <span class="setting-desc">Музыка звучит фоном и не мешает сосредоточиться</span>
+            </span>
+            <output class="range-output" id="setting-music-volume-out" for="setting-music-volume">35%</output>
+          </div>
+          <input type="range" class="range-slider" id="setting-music-volume"
+                 min="0" max="100" step="5" value="35"
+                 aria-label="Громкость фоновой музыки" />
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <h3 class="setting-title">Звук</h3>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Звук клика</span>
+            <span class="setting-desc">Мягкий звук при выборе фишки</span>
+          </span>
+          <input type="checkbox" id="setting-sound" class="toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="setting-row toggle-row">
+          <span class="setting-label">
+            <span class="setting-name">Звук победы</span>
+            <span class="setting-desc">Мелодия при завершении раскладки</span>
+          </span>
+          <input type="checkbox" id="setting-win-sound" class="toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+      </div>
+
+      <div class="setting-group danger">
+        <h3 class="setting-title">Сброс</h3>
+        <button class="btn btn-ghost" id="setting-reset-stats">Сбросить статистику</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============= ОБУЧЕНИЕ (v12) ============= -->
+  <div class="overlay tutorial-overlay" id="tutorial-overlay" role="dialog" aria-modal="true"
+       aria-label="Обучение: как играть" hidden>
+    <div class="tutorial-card">
+      <header class="tutorial-head">
+        <span class="tutorial-step" id="tutorial-step">Шаг 1 из 6</span>
+        <button class="tutorial-skip" id="tutorial-skip" type="button">Пропустить ✕</button>
+      </header>
+
+      <div class="tutorial-slides" id="tutorial-slides">
+
+        <!-- Шаг 1: добро пожаловать — пирамида -->
+        <div class="tutorial-slide active" data-slide="0">
+          <div class="tutorial-slide-icon" aria-hidden="true">中</div>
+          <h3>Добро пожаловать!</h3>
+          <p>Это маджонг-пасьянс. Перед вами пирамида из фишек. Цель — разобрать её полностью, убирая фишки парами.</p>
+          <div class="tut-scene" aria-hidden="true">
+            <div class="tut-pyramid">
+              <div class="tut-tile glow"><span class="tut-g-red">中</span></div>
+              <div class="tut-row">
+                <div class="tut-tile dim"><span class="tut-g-blue">東</span></div>
+                <div class="tut-tile dim"><span class="tut-g-green">發</span></div>
+                <div class="tut-tile dim"><span class="tut-g-blue">南</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 2: пары -->
+        <div class="tutorial-slide" data-slide="1">
+          <div class="tutorial-slide-icon" aria-hidden="true">✦</div>
+          <h3>Убирайте пары</h3>
+          <p>Найдите две одинаковые фишки и нажмите их по очереди — пара исчезнет с доски.</p>
+          <div class="tut-scene" aria-hidden="true">
+            <div class="tut-pair">
+              <div class="tut-tile glow"><span class="tut-g-green">發</span></div>
+              <span class="tut-spark">✦</span>
+              <div class="tut-tile glow"><span class="tut-g-green">發</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 3: свободная фишка -->
+        <div class="tutorial-slide" data-slide="2">
+          <div class="tutorial-slide-icon" aria-hidden="true">✓</div>
+          <h3>Свободная фишка</h3>
+          <p>Фишка свободна, если её не накрывает другая сверху и слева или справа у неё открыт бок.</p>
+          <div class="tut-examples" aria-hidden="true">
+            <div class="tut-scene">
+              <div class="tut-row">
+                <div class="tut-tile glow"><span class="tut-g-blue">東</span><span class="tut-badge ok">✓</span></div>
+                <div class="tut-tile dim"><span class="tut-g-red">中</span><span class="tut-badge no">✗</span></div>
+                <div class="tut-tile glow"><span class="tut-g-blue">南</span><span class="tut-badge ok">✓</span></div>
+              </div>
+              <span class="tut-verdict ok">✓ бок открыт — можно</span>
+            </div>
+            <div class="tut-scene">
+              <div class="tut-covered">
+                <div class="tut-tile dim"><span class="tut-g-blue">北</span><span class="tut-badge no">✗</span></div>
+                <div class="tut-tile tut-cover-top"><span class="tut-g-red">中</span></div>
+              </div>
+              <span class="tut-verdict no">✗ накрыта сверху — нельзя</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 4: слои -->
+        <div class="tutorial-slide" data-slide="3">
+          <div class="tutorial-slide-icon" aria-hidden="true">◈</div>
+          <h3>Как различать слои</h3>
+          <p>Свободные фишки светятся ярче, закрытые — приглушённые. Толстый «бок» снизу подсказывает: фишка лежит слоем выше.</p>
+          <div class="tut-scene" aria-hidden="true">
+            <div class="tut-stack">
+              <div class="tut-tile glow tut-stack-top"><span class="tut-g-red">中</span></div>
+              <div class="tut-row">
+                <div class="tut-tile dim"><span class="tut-g-blue">東</span></div>
+                <div class="tut-tile dim"><span class="tut-g-green">發</span></div>
+              </div>
+            </div>
+            <div class="tut-legend">
+              <span class="tut-chip gold">яркая — свободна</span>
+              <span class="tut-chip">приглушённая — закрыта</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 5: помощь -->
+        <div class="tutorial-slide" data-slide="4">
+          <div class="tutorial-slide-icon" aria-hidden="true">❖</div>
+          <h3>Помощь под рукой</h3>
+          <p>Кнопки над доской всегда готовы помочь, а в настройках включается автоподсказка и подсветка доступных фишек.</p>
+          <div class="tut-buttons" aria-hidden="true">
+            <div class="tut-btn">
+              <div class="tut-btn-icon"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.7V18a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3.3c1.8-1.2 3-3.3 3-5.7a7 7 0 0 0-7-7m-1 19h2v2h-2z"/></svg></div>
+              <span>Подсказка</span>
+            </div>
+            <div class="tut-btn">
+              <div class="tut-btn-icon"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M14 20v-2h2.6l-3.2-3.2 1.4-1.4L18 16.6V14h2v6zM6.6 6H4V4h6v6H8V7.4l3.2 3.2-1.4 1.4L6.6 6m9.4 0V4h2v6h-6V8h2.6l-3.2-3.2 1.4-1.4z"/></svg></div>
+              <span>Перемешать</span>
+            </div>
+            <div class="tut-btn">
+              <div class="tut-btn-icon"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12.5 8c-2.6 0-5 1-6.9 2.6L2 7v9h9l-3.6-3.6c1.4-1.2 3.2-2 5.1-2 3.9 0 7.1 3.2 7.1 7.1 0 .8-.1 1.5-.4 2.2 1.2-1.5 1.8-3.3 1.8-5.2C21 11.9 17.1 8 12.5 8"/></svg></div>
+              <span>Отменить</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 6: финал -->
+        <div class="tutorial-slide" data-slide="5">
+          <div class="tutorial-slide-icon" aria-hidden="true">★</div>
+          <h3>Всё, играем!</h3>
+          <p>Пары подряд дают комбо ×2…×8 и золотые бонусы, а за победы — достижения. Начнём с лёгкой «Пирамиды»!</p>
+          <div class="tut-chips" aria-hidden="true">
+            <span class="tut-chip gold">❖ Комбо ×3</span>
+            <span class="tut-chip gold">★ Первая победа</span>
+            <span class="tut-chip gold">✦ Молния</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tutorial-dots" id="tutorial-dots" aria-hidden="true"></div>
+
+      <footer class="tutorial-nav">
+        <button class="btn" id="tutorial-prev" type="button" hidden>← Назад</button>
+        <button class="btn btn-primary" id="tutorial-next" type="button">Далее →</button>
+        <button class="btn btn-primary" id="tutorial-play" type="button" hidden>▶ Играть!</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- v20: Кастомный confirm overlay — заменяет нативный window.confirm(),
+       который ломается в PWA standalone и не темизируется. -->
+  <div class="overlay" id="confirm-overlay" role="dialog" aria-modal="true"
+       aria-labelledby="confirm-title" hidden>
+    <div class="overlay-card confirm-card">
+      <h3 id="confirm-title" class="confirm-title">Подтверждение</h3>
+      <p id="confirm-message" class="confirm-message">Вы уверены?</p>
+      <div class="confirm-actions">
+        <button class="btn btn-ghost" id="confirm-cancel" type="button">Отмена</button>
+        <button class="btn btn-primary btn-danger" id="confirm-ok" type="button">Да, сбросить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast (всплывающие сообщения) — озвучивается скринридером -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="js/tileset-classic.js"></script>
+  <script src="js/tileset-ornate.js"></script>
+  <script src="js/tileset.js"></script>
+  <script src="js/layouts.js"></script>
+  <!-- v25-sounds: модульные звуковые эффекты.
+       Каждый звук — отдельный файл в js/sounds/. Чтобы заменить звук,
+       отредактируйте нужный файл. Чтобы добавить — создайте новый
+       и подключите здесь перед sounds/index.js. -->
+  <script src="js/sounds/init.js"></script>
+  <script src="js/sounds/click.js"></script>
+  <script src="js/sounds/match.js"></script>
+  <script src="js/sounds/combo.js"></script>
+  <script src="js/sounds/mismatch.js"></script>
+  <script src="js/sounds/hint.js"></script>
+  <script src="js/sounds/win.js"></script>
+  <script src="js/sounds/shuffle.js"></script>
+  <script src="js/sounds/hover.js"></script>
+  <script src="js/sounds/index.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/music.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/tutorial.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sw-register.js"></script>
+</body>
+</html>

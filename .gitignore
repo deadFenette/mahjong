@@ -1,0 +1,23 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node / build artifacts
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Test screenshots (kept locally only)
+scripts/
+*.png-local
+
+# Logs
+*.log

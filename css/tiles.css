@@ -1,0 +1,396 @@
+/* ============================================================
+   TILES.CSS — Стили фишек маджонга
+   Объёмные плитки как настоящая кость/нефрит.
+
+   v5: вся 3D-объёмность (толщина грани, радиусы, внутренние
+   рамки, подъём при hover/выборе) масштабируется через
+   CSS-переменные, которые Render.fitBoard выставляет под
+   текущий размер фишек. На больших фишках грани и тени
+   остаются пропорциональными — слои больше не «слипаются».
+
+   v6 (оформление):
+   1. Фишки больше НЕ просвечивают друг сквозь друга:
+      у закрытых фишек было opacity 0.88 — сквозь них
+      просвечивали нижние слои и было «не ясно кто и где».
+      Теперь элемент всегда плотный, а прозрачность
+      закрытых фишек настраивается (--tile-blocked-alpha,
+      слайдер в настройках; 0% по умолчанию = непрозрачно).
+   2. Больше красоты: глянцевый блик на лицевой стороне
+      (::after), тонкая тёмная окантовка каждой фишки
+      (--tile-edge) и более глубокая падающая тень —
+      слои читаются однозначно.
+
+   v8 (анимации):
+   1. tile-deal — каскадная раздача: фишки падают на доску
+      с лёгким поворотом и упругой посадкой. Задержка
+      каждой фишки считается от её координат (--deal-delay,
+      Render.dealDelayFor), поэтому волна идёт по доске.
+   2. tile-vanish — парные фишки при матче ПРИТЯГИВАЮТСЯ
+      друг к другу (--fly-dx/--fly-dy считает
+      Render.flyVectorFor), вспыхивают и растворяются.
+   3. match-spark — золотые искры в точке матча,
+   4. score-float — всплывающий «+N» над собранной парой,
+   5. selected-glow — мягкое дыхание свечения выбранной фишки.
+   ============================================================ */
+
+.tile {
+  position: absolute;
+  border-radius: var(--tile-radius, 8px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* v14: сверху — полупрозрачный оттенок слоя (--layer-tint), под ним тема */
+  background:
+    linear-gradient(var(--layer-tint, transparent), var(--layer-tint, transparent)),
+    var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  box-shadow:
+    /* Тонкая тёмная окантовка — фишка не сливается ни со столом, ни с соседями */
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    /* Внутренний блик сверху-слева */
+    inset 1px 1px 0 var(--tile-highlight),
+    /* Внутренняя тень снизу-справа */
+    inset -1px -1px 0 var(--tile-shadow),
+    /* Тонкая декоративная внутренняя рамка (как на настоящих фишках) */
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.08),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
+    /* Боковая грань снизу (эффект толщины) — растёт с размером фишки */
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 calc(var(--tile-depth, 4px) * 0.5) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 0.75) 0 var(--tile-shadow),
+    0 var(--tile-depth, 4px) 0 var(--tile-shadow),
+    /* Падающая тень — глубже и мягче, чем в v5: слои отделяются явно */
+    0 calc(var(--tile-depth, 4px) * 1.3) calc(var(--tile-depth, 4px) * 0.6) var(--shadow-strong),
+    0 calc(var(--tile-depth, 4px) * 2.2) calc(var(--tile-depth, 4px) * 1.6) var(--shadow-strong);
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    opacity 0.25s ease,
+    filter 0.25s ease;
+  will-change: transform;
+  /* Защита от подпиксельного размытия SVG */
+  -webkit-font-smoothing: antialiased;
+  font-smoothing: antialiased;
+}
+
+.tile .tile-face-svg {
+  width: 100%;
+  height: 100%;
+  padding: var(--tile-face-pad, 6px);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.5));
+}
+
+/* Декоративная внутренняя рамка (как гравюра на настоящей фишке) */
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: var(--tile-inner-inset, 4px);
+  border-radius: calc(var(--tile-radius, 8px) - 3px);
+  border: 1px solid var(--layer-ring, var(--tile-inner-border));
+  pointer-events: none;
+  opacity: var(--layer-ring-opacity, 0.5);
+}
+
+/* ---------- Цвета слоёв (v14) ----------
+   Раньше слои различались только толщиной «бока» — на одинаковых
+   слоновых фишках это почти не видно. Теперь у каждого слоя свой
+   оттенок лица и своя рамка. Оттенки полупрозрачные, поэтому
+   работают поверх любой темы.
+   Нижний слой — тёплый янтарный (как старая кость), дальше
+   мятный, светлая слоновая кость, розовый, голубой, золотой. */
+.tile[data-layer="0"] { --layer-tint: rgba(176, 124, 64, 0.34);  --layer-ring: rgba(120, 76, 28, 0.95);  --layer-ring-opacity: 0.8; }
+.tile[data-layer="1"] { --layer-tint: rgba(88, 170, 140, 0.28);  --layer-ring: rgba(30, 118, 90, 0.95);  --layer-ring-opacity: 0.8; }
+.tile[data-layer="2"] { --layer-tint: rgba(255, 252, 235, 0.45); --layer-ring: rgba(176, 140, 70, 0.95); --layer-ring-opacity: 0.8; }
+.tile[data-layer="3"] { --layer-tint: rgba(236, 130, 156, 0.30); --layer-ring: rgba(186, 60, 96, 0.95);  --layer-ring-opacity: 0.8; }
+.tile[data-layer="4"] { --layer-tint: rgba(110, 146, 232, 0.32); --layer-ring: rgba(50, 84, 190, 0.95);  --layer-ring-opacity: 0.8; }
+.tile[data-layer="5"] { --layer-tint: rgba(250, 205, 80, 0.42);  --layer-ring: rgba(184, 132, 12, 0.95); --layer-ring-opacity: 0.8; }
+
+
+/* Глянцевый блик на лицевой стороне — фишка как полированная кость.
+   Лежит ПОВЕРХ рисунка, но внутри фишки: прозрачности самому
+   элементу не добавляет, сквозь слои ничего не просвечивает. */
+.tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(155deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.10) 26%,
+    rgba(255, 255, 255, 0) 52%,
+    rgba(0, 0, 0, 0.06) 100%);
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.25s ease;
+}
+
+/* ---------- Закрытые (недоступные) фишки ---------- */
+/* v6: НИКАКОЙ прозрачности по умолчанию — opacity 0.88 из v5
+   просвечивал сквозь слои. Вместо этого фишка приглушается
+   фильтром (она остаётся плотной), а настоящую прозрачность
+   пользователь включает сам слайдером «Прозрачность фишек»:
+   --tile-blocked-alpha ставит App (0% → 1, максимум 50% → 0.5). */
+.tile:not(.free) {
+  cursor: default;
+  opacity: var(--tile-blocked-alpha, 1);
+  filter: saturate(0.78) brightness(0.92);
+}
+.tile:not(.free):hover {
+  /* Лёгкий отклик при наведении: чуть ярче и чуть яснее,
+     но никогда прозрачнее, чем выбрал пользователь */
+  opacity: min(1, calc(var(--tile-blocked-alpha, 1) + 0.2));
+  filter: saturate(1) brightness(1);
+}
+.tile:not(.free):hover::after { opacity: 0.35; }
+
+/* Свободная фишка — мягкая золотая подсветка, всегда непрозрачная */
+.tile.free {
+  opacity: 1;
+  filter: saturate(1.05) brightness(1.02);
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.08),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 calc(var(--tile-depth, 4px) * 0.5) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 0.75) 0 var(--tile-shadow),
+    0 var(--tile-depth, 4px) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.3) calc(var(--tile-depth, 4px) * 0.6) var(--shadow-strong),
+    0 calc(var(--tile-depth, 4px) * 2.2) calc(var(--tile-depth, 4px) * 1.6) var(--shadow-strong),
+    /* Свечение */
+    0 0 0 1px var(--tile-free-glow),
+    0 0 14px var(--tile-free-glow-soft);
+}
+
+.tile.free:hover {
+  transform: translateY(calc(var(--tile-hover-lift, 4px) * -1));
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.12),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
+    0 calc(var(--tile-depth, 4px) * 0.5) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.5) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 2) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 2.5) 8px var(--shadow-strong),
+    0 calc(var(--tile-depth, 4px) * 3.5) 20px var(--shadow-strong),
+    0 0 0 2px var(--tile-hover-glow),
+    0 0 22px var(--tile-hover-glow-soft);
+}
+.tile.free:hover::after { opacity: 0.9; }
+
+/* Выбранная — заметно приподнимается, видна поверх всех слоёв.
+   v8: мягкое «дыхание» свечения (анимируется только filter —
+   transform оставлен статике, чтобы не мешать hover/z-lift) */
+.tile.selected {
+  transform: translateY(calc(var(--tile-sel-lift, 6px) * -1)) scale(1.02);
+  animation: selected-glow 1.8s ease-in-out 0.45s infinite;
+  z-index: 9999 !important;
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.15),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
+    0 calc(var(--tile-depth, 4px) * 0.75) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.25) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.75) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 2.25) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 3) 8px var(--shadow-strong),
+    0 calc(var(--tile-depth, 4px) * 4.5) 28px var(--shadow-strong),
+    0 0 0 3px var(--accent-gold),
+    0 0 24px var(--accent-gold-soft);
+}
+.tile.selected::after { opacity: 0.85; }
+@keyframes selected-glow {
+  0%, 100% { filter: saturate(1.05) brightness(1.02); }
+  50%      { filter: saturate(1.3) brightness(1.14); }
+}
+
+/* ---------- Каскадная раздача (v8) ----------
+   Ставится Render.playDealAnimation() на старте партии,
+   перемешивании и отмене хода. Задержка — от координат фишки,
+   поэтому волна накатывает по доске, а не «всё разом».
+   Конечный кадр повторяет естественные стили (opacity из
+   var(--tile-blocked-alpha) — не ломает слайдер прозрачности),
+   а по animationend класс снимается совсем. */
+.tile.enter {
+  animation: tile-deal 0.55s cubic-bezier(0.22, 1.1, 0.36, 1) both;
+  animation-delay: var(--deal-delay, 0ms);
+}
+@keyframes tile-deal {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(var(--tile-h, 78px) * -0.5)) scale(0.68) rotate(var(--deal-rot, 0deg));
+    filter: brightness(1.3) saturate(0.75);
+  }
+  55% { opacity: 1; }
+  78% {
+    transform: translateY(calc(var(--tile-h, 78px) * 0.035)) scale(1.02) rotate(0deg);
+  }
+  100% {
+    opacity: var(--tile-blocked-alpha, 1);
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: brightness(1) saturate(1);
+  }
+}
+
+/* Подсказка — мягкая пульсация */
+.tile.hint {
+  animation: hint-pulse 0.7s ease-in-out 3;
+}
+@keyframes hint-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+      inset 1px 1px 0 var(--tile-highlight),
+      inset -1px -1px 0 var(--tile-shadow),
+      inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.08),
+      inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
+      0 calc(var(--tile-depth, 4px) * 0.5) 0 var(--tile-shadow),
+      0 var(--tile-depth, 4px) 0 var(--tile-shadow),
+      0 calc(var(--tile-depth, 4px) * 1.25) 4px var(--shadow-medium),
+      0 calc(var(--tile-depth, 4px) * 2) 12px var(--shadow-strong),
+      0 0 0 0 var(--tile-hint-glow);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+      inset 1px 1px 0 var(--tile-highlight),
+      inset -1px -1px 0 var(--tile-shadow),
+      inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.12),
+      inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
+      0 calc(var(--tile-depth, 4px) * 0.5) 0 var(--tile-shadow),
+      0 var(--tile-depth, 4px) 0 var(--tile-shadow),
+      0 calc(var(--tile-depth, 4px) * 1.25) 4px var(--shadow-medium),
+      0 calc(var(--tile-depth, 4px) * 2) 12px var(--shadow-strong),
+      0 0 0 4px var(--tile-hint-glow),
+      0 0 30px var(--tile-hint-glow-soft);
+    transform: translateY(calc(var(--tile-hint-lift, 2px) * -1));
+  }
+}
+
+/* Покачивание (клик по недоступной фишке) */
+.tile.shake {
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(calc(var(--tile-w-shake, 5px) * -1)); }
+  75% { transform: translateX(var(--tile-w-shake, 5px)); }
+}
+
+/* Удаление — анимация 450 мс, .removed ставится только после неё.
+   v8: пара сначала ПРИТЯГИВАЕТСЯ друг к другу (--fly-dx/--fly-dy
+   задаёт Render.animateRemove), вспыхивает и растворяется вверх. */
+.tile.removing {
+  animation: tile-vanish 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+  /* исчезающая фишка видна поверх соседних слоёв */
+  z-index: 9998 !important;
+}
+@keyframes tile-vanish {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+    filter: brightness(1) saturate(1);
+  }
+  35% {
+    transform: translate(var(--fly-dx, 0px), var(--fly-dy, 0px)) scale(1.12) rotate(3deg);
+    opacity: 1;
+    filter: brightness(1.5) saturate(1.25);
+  }
+  100% {
+    transform: translate(calc(var(--fly-dx, 0px) * 1.6), calc(var(--fly-dy, 0px) * 1.6 - 26px)) scale(0.15) rotate(12deg);
+    opacity: 0;
+    filter: brightness(1.9);
+  }
+}
+.tile.removed { display: none; }
+
+/* ---------- Золотые искры в точке матча (v8) ----------
+   Спавнятся Render.animateRemove у середины пары.
+   Разлёт задаётся переменными --sx/--sy на элементе. */
+.match-spark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    #fff8e1 0%,
+    var(--accent-gold, #e8b84b) 55%,
+    rgba(232, 184, 75, 0) 100%);
+  box-shadow: 0 0 8px var(--accent-gold-soft, rgba(232, 184, 75, 0.55));
+  pointer-events: none;
+  z-index: 10001;
+  opacity: 0;
+  animation: spark-fly var(--s-dur, 0.65s) cubic-bezier(0.15, 0.75, 0.4, 1) forwards;
+  animation-delay: var(--s-delay, 0s);
+}
+@keyframes spark-fly {
+  0%   { transform: translate(0, 0) scale(0.4); opacity: 0; }
+  12%  { opacity: 1; }
+  100% { transform: translate(var(--sx, 20px), var(--sy, -20px)) scale(0); opacity: 0; }
+}
+
+/* ---------- Всплывающий «+N» над собранной парой (v8) ---------- */
+.score-float {
+  position: absolute;
+  z-index: 10002;
+  pointer-events: none;
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  font-size: clamp(18px, calc(var(--tile-w, 56px) * 0.42), 34px);
+  font-weight: 700;
+  color: var(--accent-gold-bright, #f4d27a);
+  text-shadow:
+    0 1px 0 var(--shadow-strong, rgba(0, 0, 0, 0.4)),
+    0 0 14px var(--accent-gold-glow, rgba(232, 184, 75, 0.6));
+  white-space: nowrap;
+  animation: score-float-up 1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes score-float-up {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.7); }
+  18%  { opacity: 1; transform: translate(-50%, -62%) scale(1.08); }
+  100% { opacity: 0; transform: translate(-50%, -195%) scale(1); }
+}
+
+/* ---------- Всплывающее «Комбо ×N» (v11) ---------- */
+/* Крупнее и наряднее «+N»: золотой градиент по буквам, */
+/* сильнее свечение, поднимается выше и живёт дольше. */
+.combo-float {
+  position: absolute;
+  z-index: 10003;
+  pointer-events: none;
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  font-size: clamp(24px, calc(var(--tile-w, 56px) * 0.6), 52px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, #fff3d0 0%, var(--accent-gold-bright, #f4d27a) 45%, var(--accent-gold, #e8b84b) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter:
+    drop-shadow(0 2px 0 var(--shadow-strong, rgba(0, 0, 0, 0.4)))
+    drop-shadow(0 0 18px var(--accent-gold-glow, rgba(232, 184, 75, 0.75)));
+  white-space: nowrap;
+  animation: combo-float-up 1.5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes combo-float-up {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
+  14%  { opacity: 1; transform: translate(-50%, -70%) scale(1.15); }
+  26%  { transform: translate(-50%, -78%) scale(1); }
+  72%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -210%) scale(1); }
+}
+
+/* Иероглифы */
+.tile svg text {
+  font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+}

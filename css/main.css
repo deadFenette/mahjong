@@ -1,0 +1,1790 @@
+/* ============================================================
+   MAIN.CSS — Базовые стили, экраны, меню, кнопки
+   ГЛАВНОЕ: каждый .screen имеет opaque background, наложений нет
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Noto Sans SC', 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  background: var(--bg-solid);
+  color: var(--text-main);
+  font-size: 16px;
+  transition: background 0.5s ease, color 0.5s ease;
+  position: relative;
+}
+
+/* ============================================================
+   АТМОСФЕРНЫЕ СЛОИ ФОНА
+   ============================================================ */
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.atmosphere-gradient {
+  position: absolute;
+  inset: 0;
+  background: var(--atm-gradient);
+}
+.atmosphere-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: var(--atm-pattern);
+  background-size: var(--atm-pattern-size, 80px 80px);
+  opacity: var(--atm-pattern-opacity, 0.15);
+}
+.atmosphere-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center,
+    transparent 0%,
+    transparent 40%,
+    var(--atm-vignette) 100%);
+}
+
+/* ============================================================
+   ЭКРАНЫ — каждый с непрозрачным фоном, наложений нет
+   v8: красивая смена экранов — вход с лёгким подъёмом.
+   ВАЖНО: fill-mode backwards, а НЕ both — иначе после
+   анимации навсегда останется transform, и экран станет
+   containing block для position:fixed детей (пауза-оверлей).
+   ============================================================ */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1;
+  background: var(--bg-screen);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.screen.active {
+  display: flex;
+  opacity: 1;
+  animation: screen-in 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.996); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* Чтобы при первом показе не было рывка */
+body[data-screen="menu"] #screen-menu,
+body[data-screen="layouts"] #screen-layouts,
+body[data-screen="difficulty"] #screen-difficulty,
+body[data-screen="game"] #screen-game,
+body[data-screen="win"] #screen-win,
+body[data-screen="settings"] #screen-settings {
+  display: flex;
+  opacity: 1;
+}
+
+/* Золотая пыль (v10) — медленные искры, поднимающиеся из глубины
+   меню. Лёгкая, глубокий фон не перекрывает; reduced-motion гасит. */
+.menu-dust {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+.dust-mote {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--accent-gold-bright) 0%,
+    var(--accent-gold) 45%,
+    transparent 72%);
+  opacity: 0;
+  filter: drop-shadow(0 0 4px var(--accent-gold-soft));
+  animation: dust-rise linear infinite;
+}
+@keyframes dust-rise {
+  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  12%  { opacity: 0.8; }
+  55%  { opacity: 0.45; }
+  100% { transform: translate(var(--dx, 0px), -108vh) scale(1); opacity: 0; }
+}
+
+/* v8: пульс значения, когда оно изменилось (ставит App.bumpValue) */
+.info-value.bump,
+.stat-value.bump {
+  animation: value-bump 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes value-bump {
+  0%   { transform: scale(1); }
+  35%  {
+    transform: scale(1.22);
+    color: var(--accent-gold-bright);
+    text-shadow: 0 0 12px var(--accent-gold-glow);
+  }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================
+   КНОПКИ
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 16px 22px;
+  border: 1px solid var(--btn-border);
+  border-radius: 14px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-size: 17px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+/* Золотая планка слева — проявляется при наведении */
+.btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent-gold-bright), var(--accent-gold-dark));
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+.btn:hover::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+.btn-primary::before {
+  display: none;
+}
+/* Блик-разгон по кнопке при наведении */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -70%;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.14), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.55s ease;
+  pointer-events: none;
+}
+.btn:hover::after {
+  left: 125%;
+}
+.btn[hidden] { display: none; }
+.btn:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--accent-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--shadow-medium), 0 0 0 1px var(--accent-gold-soft);
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px var(--shadow-medium);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-dark) 100%);
+  border-color: var(--accent-gold-dark);
+  color: var(--bg-solid);
+  font-weight: 600;
+  box-shadow: 0 4px 16px var(--accent-gold-soft);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--accent-gold-bright) 0%, var(--accent-gold) 100%);
+  border-color: var(--accent-gold-dark);
+  box-shadow: 0 8px 24px var(--accent-gold-soft);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-soft);
+  color: var(--text-muted);
+}
+/* v20: опасная кнопка — для сброса статистики и подобных деструктивных
+   действий. Красная, как лаковые фишки маджонга. */
+.btn-danger {
+  background: linear-gradient(135deg, #e63a3a 0%, #a01a26 60%, #7a1220 100%);
+  border-color: #7a1220;
+  color: #fdf3df;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(200, 32, 42, 0.4);
+}
+.btn-danger:hover {
+  background: linear-gradient(135deg, #ff5a5a 0%, #c8202a 60%, #9a1820 100%);
+  box-shadow: 0 8px 24px rgba(200, 32, 42, 0.55);
+}
+.btn-icon {
+  font-size: 22px;
+  width: 28px;
+  display: inline-block;
+  text-align: center;
+  flex-shrink: 0;
+}
+.btn-label {
+  flex: 1;
+  text-align: left;
+}
+.btn-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+  text-align: left;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 12px;
+}
+.btn-arrow {
+  font-size: 18px;
+  color: var(--accent-gold);
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.btn-hint + .btn-arrow {
+  margin-left: 0;
+}
+.btn:hover .btn-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+.btn-primary .btn-arrow {
+  color: var(--bg-solid);
+}
+
+.btn-icon-only {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 24px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.btn-icon-only:hover {
+  background: var(--btn-bg-hover);
+  color: var(--accent-gold);
+}
+
+.btn-action {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-soft);
+  background: var(--btn-bg);
+  color: var(--text-main);
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.btn-action:hover {
+  background: var(--accent-gold);
+  color: var(--bg-solid);
+  border-color: var(--accent-gold-dark);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   ЗАГОЛОВКИ ЭКРАНОВ
+   ============================================================ */
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-header);
+  flex-shrink: 0;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.screen-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+/* ============================================================
+   ГАЛЕРЕЯ РАСКЛАДОК
+   ============================================================ */
+.layouts-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+  align-content: start;
+}
+.layout-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: inherit;
+  color: var(--text-main);
+  position: relative;
+  overflow: hidden;
+  /* v8: каскадное появление карточек (--i ставит App.renderLayoutsGrid).
+     fill-mode backwards — чтобы после анимации hover-transform работал */
+  animation: card-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.layout-card:hover {
+  border-color: var(--accent-gold);
+  background: var(--card-bg-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px var(--shadow-medium), 0 0 0 1px var(--accent-gold-soft);
+}
+.layout-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-gold-soft), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.layout-card:hover::before { opacity: 1; }
+
+.layout-preview {
+  height: 130px;
+  background: var(--preview-bg);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 8px var(--shadow-soft);
+}
+.preview-tile {
+  position: absolute;
+  background: var(--preview-tile);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px var(--shadow-strong);
+}
+.layout-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.layout-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.layout-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.layout-meta {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+/* v9: золотой бейдж «✓ N» — сколько раз раскладка собрана.
+   Живёт в правом верхнем углу превью (превью — relative+hidden). */
+.layout-wins {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(14, 10, 6, 0.72);
+  border: 1px solid var(--accent-gold-soft);
+  color: var(--accent-gold-bright);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  line-height: 1.4;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ============================================================
+   СЛОЖНОСТЬ
+   ============================================================ */
+.difficulty-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: inherit;
+  color: var(--text-main);
+  /* v8: каскад появления карточек сложности (--i в разметке) */
+  animation: card-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms + 0.05s);
+}
+.card:hover {
+  border-color: var(--accent-gold);
+  background: var(--card-bg-hover);
+  transform: translateX(6px);
+  box-shadow: 0 8px 20px var(--shadow-medium);
+}
+.difficulty-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.card-icon {
+  font-size: 36px;
+  width: 48px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.card-body { flex: 1; }
+.card-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.card-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   ИГРОВОЙ ЭКРАН
+   ============================================================ */
+.game-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 2;
+}
+.game-info {
+  display: flex;
+  gap: 28px;
+  flex: 1;
+  justify-content: center;
+}
+.info-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 60px;
+}
+.info-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.info-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-gold);
+  font-variant-numeric: tabular-nums;
+}
+.game-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.board-stage {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Паддинг адаптивный: на телефонах минимальный — вся площадь фишкам */
+  padding: clamp(10px, 2.5vw, 26px);
+  z-index: 1;
+  -webkit-overflow-scrolling: touch;
+}
+.board-table {
+  position: relative;
+  margin: auto;
+  padding: 36px;
+  background: var(--table-bg);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 var(--table-highlight),
+    inset 0 -2px 0 var(--table-shadow),
+    /* Виньетка внутрь стола — глубина сцены (v6) */
+    inset 0 0 48px rgba(0, 0, 0, 0.22),
+    0 12px 36px var(--shadow-strong),
+    0 4px 12px var(--shadow-medium);
+  border: 1px solid var(--table-border);
+}
+/* v10: золотая нить по периметру игрового поля — «богатый» стол.
+   Сидит в зоне паддинга, с фишками не пересекается (pointer-events: none). */
+.board-table::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border: 1px solid var(--accent-gold-soft);
+  border-radius: 12px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+/* v8: стол «вздрагивает» при перемешивании (класс ставит Render.pulseTable) */
+.board-table.table-shake {
+  animation: table-shake 0.55s ease;
+}
+@keyframes table-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20%  { transform: translate(-3px, 1px) rotate(-0.35deg); }
+  45%  { transform: translate(3px, -1px) rotate(0.3deg); }
+  70%  { transform: translate(-2px, 1px) rotate(-0.18deg); }
+}
+.board {
+  position: relative;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   v18: БОКОВЫЕ ДЕКОРАЦИИ ИГРОВОГО ПОЛЯ
+   Вертикальные «свитки» с каллиграфией слева и справа от стола.
+   - position: absolute внутри .board-stage (centered flex)
+   - pointer-events: none — не мешают кликам по фишкам
+   - z-index: 0 — позади стола (стол имеет свой фон)
+   - На узких экранах скрываются, чтобы не отнимать место у доски
+   ============================================================ */
+.board-side-decor {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(36px, 4vw, 56px);
+  height: min(70vh, 520px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 12px var(--shadow-medium));
+  opacity: 0.92;
+  animation: scroll-rise 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+.board-side-decor-l {
+  left: clamp(6px, 1.5vw, 16px);
+  animation-delay: 0.05s;
+}
+.board-side-decor-r {
+  right: clamp(6px, 1.5vw, 16px);
+  animation-delay: 0.12s;
+}
+
+@keyframes scroll-rise {
+  from { opacity: 0; transform: translateY(-50%) translateX(var(--side-dx, 0)) scaleY(0.6); }
+  to   { opacity: 0.92; transform: translateY(-50%) translateX(0) scaleY(1); }
+}
+.board-side-decor-l { --side-dx: -16px; }
+.board-side-decor-r { --side-dx: 16px; }
+
+/* Стержни свитка сверху и снизу */
+.side-scroll-top,
+.side-scroll-bottom {
+  width: 100%;
+  height: clamp(12px, 1.6vh, 18px);
+  background: linear-gradient(180deg,
+    var(--accent-gold-bright) 0%,
+    var(--accent-gold) 40%,
+    var(--accent-gold-dark) 100%);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 2px 4px var(--shadow-medium);
+  flex-shrink: 0;
+  position: relative;
+}
+.side-scroll-top::before,
+.side-scroll-bottom::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -4px;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 60%;
+  background: radial-gradient(circle,
+    var(--accent-gold-bright) 30%,
+    var(--accent-gold-dark) 100%);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px var(--shadow-medium);
+}
+.side-scroll-top::after,
+.side-scroll-bottom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -4px;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 60%;
+  background: radial-gradient(circle,
+    var(--accent-gold-bright) 30%,
+    var(--accent-gold-dark) 100%);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px var(--shadow-medium);
+}
+
+/* Тело свитка — «шёлковая» лента с каллиграфией */
+.side-scroll-body {
+  flex: 1;
+  width: 100%;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    var(--tile-bg, #fdf8ea) 8%,
+    var(--tile-bg, #fdf8ea) 92%,
+    rgba(0, 0, 0, 0.15) 100%);
+  border-left: 1px solid var(--table-border);
+  border-right: 1px solid var(--table-border);
+  box-shadow:
+    inset 2px 0 4px rgba(0, 0, 0, 0.18),
+    inset -2px 0 4px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  padding: clamp(12px, 2.5vh, 28px) 0;
+  overflow: hidden;
+}
+
+.side-glyph {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-weight: 900;
+  font-size: clamp(20px, 2.4vh, 32px);
+  color: var(--accent-gold-dark);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6),
+    0 -1px 0 rgba(0, 0, 0, 0.1);
+  line-height: 1;
+  opacity: 0.85;
+}
+/* Каждый второй иероглиф — красным, как смена тембра в свитке */
+.side-scroll-body .side-glyph:nth-child(even) {
+  color: #c8202a;
+  opacity: 0.78;
+}
+
+/* ---------- Угловые кисточки-висюльки на столе ---------- */
+.board-tassel {
+  position: absolute;
+  width: 4px;
+  height: clamp(24px, 3.5vh, 38px);
+  background: linear-gradient(180deg,
+    var(--accent-gold-bright) 0%,
+    var(--accent-gold) 50%,
+    var(--accent-gold-dark) 100%);
+  pointer-events: none;
+  z-index: 1;
+  filter: drop-shadow(0 2px 3px var(--shadow-medium));
+}
+.board-tassel::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 9px;
+  height: 11px;
+  background: radial-gradient(circle,
+    var(--accent-gold-bright) 30%,
+    var(--accent-gold-dark) 100%);
+  border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+}
+.board-tassel-tl { top: -2px; left: 12px; }
+.board-tassel-tr { top: -2px; right: 12px; }
+.board-tassel-bl { bottom: -2px; left: 12px; transform: rotate(180deg); }
+.board-tassel-br { bottom: -2px; right: 12px; transform: rotate(180deg); }
+
+/* ---------- Сокрытие декора на узких/низких экранах ---------- */
+@media (max-width: 900px) {
+  .board-side-decor { display: none; }
+}
+@media (max-height: 480px) {
+  .board-side-decor { display: none; }
+  .board-tassel { height: 18px; }
+}
+/* На средних экранах декор компактнее */
+@media (max-width: 1100px) and (min-width: 901px) {
+  .board-side-decor {
+    width: 32px;
+    opacity: 0.7;
+  }
+  .side-glyph { font-size: 18px; }
+}
+
+/* ============================================================
+   OVERLAY (Пауза)
+   ============================================================ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fade-in 0.2s ease;
+}
+.overlay[hidden] {
+  display: none;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.overlay-card {
+  background: var(--bg-screen);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 300px;
+  box-shadow: 0 24px 60px var(--shadow-strong);
+  /* v8: карточка паузы выпрыгивает, а не просто проявляется */
+  animation: card-pop 0.32s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+@keyframes card-pop {
+  from { opacity: 0; transform: translateY(14px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.overlay-card h3 {
+  text-align: center;
+  font-size: 26px;
+  margin-bottom: 12px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* v20: Кастомный confirm overlay — узкая карточка с сообщением
+   и двумя кнопками (Отмена / Опасная-кнопка). */
+.confirm-card {
+  max-width: 420px;
+  min-width: 320px;
+  padding: 28px 32px 24px;
+}
+.confirm-title {
+  /* v20: иконка-предупреждение в заголовке (опционально через ::before) */
+  position: relative;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+.confirm-message {
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0 0 18px;
+  max-width: 360px;
+  align-self: center;
+}
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.confirm-actions .btn {
+  flex: 1;
+  min-width: 120px;
+}
+/* v9: сводка партии прямо в карточке паузы */
+.pause-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 10px 0 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.pause-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.pause-stat span {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.pause-stat strong {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   ПОБЕДА
+   ============================================================ */
+#screen-win {
+  align-items: center;
+  justify-content: center;
+}
+.win-inner {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  padding: 20px;
+}
+.win-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, var(--accent-gold-soft) 0%, transparent 60%);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.15); }
+}
+.win-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.burst-particle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  left: -7px;
+  top: -7px;
+  /* v8: длительность/поворот/задержка индивидуальны (--dur/--rot/--delay) */
+  animation: burst-fly var(--dur, 1.5s) cubic-bezier(0.15, 0.6, 0.4, 1) forwards;
+  animation-delay: var(--delay);
+  opacity: 0;
+}
+/* v8: часть частиц — квадратные «мини-фишки» вместо кружков */
+.burst-square { border-radius: 2px; }
+@keyframes burst-fly {
+  0%   { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 1; }
+  50%  { opacity: 1; }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(1) rotate(var(--rot, 0deg));
+    opacity: 0;
+  }
+}
+.win-title {
+  font-size: clamp(56px, 9vw, 110px);
+  font-weight: 700;
+  color: var(--accent-gold);
+  text-shadow:
+    0 2px 0 var(--shadow-strong),
+    0 0 40px var(--accent-gold-glow),
+    0 8px 24px var(--accent-gold-soft);
+  margin-bottom: 12px;
+  font-family: 'Noto Serif SC', serif;
+  position: relative;
+  z-index: 2;
+  letter-spacing: 0.05em;
+  /* v8: заголовок эффектно вырастает с лёгким наклоном */
+  animation: win-pop 0.65s cubic-bezier(0.34, 1.4, 0.64, 1) 0.08s backwards;
+}
+@keyframes win-pop {
+  from { opacity: 0; transform: scale(0.45) rotate(-5deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.win-subtitle {
+  font-size: 18px;
+  color: var(--text-muted);
+  margin-bottom: 36px;
+  position: relative;
+  z-index: 2;
+  /* v8: каскад появления блока победы */
+  animation: win-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) 0.3s backwards;
+}
+/* v10: золотой бейдж «Новый рекорд!» над подзаголовком */
+.win-record {
+  display: inline-block;
+  padding: 7px 20px;
+  margin-bottom: 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent-gold-bright) 0%, var(--accent-gold) 55%, var(--accent-gold-dark) 100%);
+  color: #1c0f06;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow:
+    0 4px 18px var(--accent-gold-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  position: relative;
+  z-index: 2;
+  animation: record-pop 0.55s cubic-bezier(0.34, 1.5, 0.64, 1) 0.5s backwards;
+}
+.win-record[hidden] { display: none; }
+@keyframes record-pop {
+  from { opacity: 0; transform: scale(0.4) rotate(-5deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.win-stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 36px;
+  position: relative;
+  z-index: 2;
+  animation: win-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) 0.45s backwards;
+}
+.win-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.win-stat span {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.win-stat strong {
+  font-size: 32px;
+  color: var(--accent-gold);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Достижения на экране победы (v11) ---------- */
+.win-achievements {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 560px;
+  margin: -14px auto 30px;
+  position: relative;
+  z-index: 2;
+  animation: win-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) 0.52s backwards;
+}
+.win-achievements[hidden] { display: none; }
+.win-ach {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--card-bg, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.14));
+  backdrop-filter: blur(6px);
+  font-size: 13px;
+  color: var(--text-main, inherit);
+}
+.win-ach-icon {
+  color: var(--accent-gold);
+  font-size: 15px;
+  line-height: 1;
+}
+.win-ach-name { font-weight: 500; }
+/* Полученное в ЭТОЙ партии — золотая рамка и метка */
+.win-ach-new {
+  border-color: var(--accent-gold);
+  box-shadow:
+    0 0 14px var(--accent-gold-soft, rgba(232, 184, 75, 0.35)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  animation: ach-pop 0.5s cubic-bezier(0.34, 1.5, 0.64, 1) backwards;
+}
+.win-ach-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1c0f06;
+  background: linear-gradient(135deg, var(--accent-gold-bright), var(--accent-gold));
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+@keyframes ach-pop {
+  from { opacity: 0; transform: scale(0.6) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.win-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
+  animation: win-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) 0.6s backwards;
+}
+@keyframes win-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   НАСТРОЙКИ
+   ============================================================ */
+.settings-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+.setting-group {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.setting-group:last-child {
+  border-bottom: none;
+}
+.setting-group.danger {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 24px;
+}
+.setting-title {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  font-size: 16px;
+  gap: 16px;
+}
+.setting-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.setting-name {
+  font-size: 16px;
+  color: var(--text-main);
+}
+.setting-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---------- Слайдер прозрачности ---------- */
+.setting-block {
+  padding: 4px 0 2px;
+}
+.range-row {
+  align-items: flex-start;
+  padding-bottom: 10px;
+}
+.range-output {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-gold);
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+}
+.range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    var(--accent-gold) 0%,
+    var(--accent-gold) var(--range-fill, 0%),
+    var(--border-soft) var(--range-fill, 0%),
+    var(--border-soft) 100%);
+  outline: none;
+  cursor: pointer;
+  margin: 2px 0 12px;
+  box-shadow: inset 0 1px 3px var(--shadow-soft);
+}
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--accent-gold-bright) 0%, var(--accent-gold-dark) 100%);
+  border: 2px solid var(--accent-gold-dark);
+  box-shadow: 0 2px 6px var(--shadow-medium), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+.range-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--accent-gold-bright) 0%, var(--accent-gold-dark) 100%);
+  border: 2px solid var(--accent-gold-dark);
+  box-shadow: 0 2px 6px var(--shadow-medium);
+  cursor: pointer;
+}
+.range-slider:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 4px;
+}
+
+/* Toggle switch */
+.toggle-row { cursor: pointer; }
+.toggle {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-switch {
+  width: 48px;
+  height: 26px;
+  background: var(--border-soft);
+  border-radius: 13px;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 3px var(--shadow-soft);
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease, box-shadow 0.2s;
+  box-shadow: 0 1px 3px var(--shadow-medium);
+}
+.toggle:checked + .toggle-switch {
+  background: var(--accent-gold);
+}
+.toggle:checked + .toggle-switch::after {
+  transform: translateX(22px);
+  box-shadow: 0 1px 4px var(--shadow-strong);
+}
+
+.theme-picker, .size-picker, .skin-picker {
+  display: grid;
+  /* v19: 5 размеров — уменьшили minmax, чтобы на широком экране
+     все карточки помещались в один ряд */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+.theme-card, .size-card, .skin-card {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  font-family: inherit;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.size-name, .skin-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+.size-desc, .skin-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.theme-card:hover, .size-card:hover, .skin-card:hover {
+  border-color: var(--accent-gold);
+  transform: translateY(-2px);
+}
+.theme-card.active, .size-card.active, .skin-card.active {
+  border-color: var(--accent-gold);
+  background: var(--card-bg-active);
+  box-shadow: 0 0 0 1px var(--accent-gold-soft);
+}
+.theme-preview {
+  width: 100%;
+  height: 70px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+}
+.theme-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.theme-desc {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Превью тем — больше никаких ::after с символом 🀄, который мог протыкать */
+.theme-preview-traditional {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 215, 130, 0.3), transparent 50%),
+    linear-gradient(135deg, #2a1810 0%, #5a2a1a 50%, #8a5a2a 100%);
+}
+.theme-preview-traditional::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 60%, rgba(212, 169, 85, 0.2) 100%),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.03) 10px, rgba(255, 255, 255, 0.03) 11px);
+}
+.theme-preview-jade {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(180, 220, 200, 0.5), transparent 50%),
+    linear-gradient(135deg, #a8d8c8 0%, #c8e8d8 50%, #e8d8e8 100%);
+}
+.theme-preview-porcelain {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(232, 200, 120, 0.3), transparent 50%),
+    linear-gradient(135deg, #0a1a2a 0%, #2a5a8a 50%, #f0e8d0 100%);
+}
+/* v9: ночная тема — чёрный лак с золотой нитью и киноварной подложкой */
+.theme-preview-night {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(212, 169, 85, 0.32), transparent 50%),
+    linear-gradient(135deg, #0c0a09 0%, #1c1710 55%, #3a2218 100%);
+}
+.theme-preview-night::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(200, 32, 42, 0.28) 100%),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(212, 169, 85, 0.05) 10px, rgba(212, 169, 85, 0.05) 11px);
+}
+
+/* v10: императорская тема — багровый лак с обильным золотом */
+.theme-preview-imperial {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(232, 190, 110, 0.38), transparent 50%),
+    linear-gradient(135deg, #200808 0%, #4a1612 55%, #8a3a20 100%);
+}
+.theme-preview-imperial::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(232, 190, 110, 0.3) 100%),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(232, 190, 110, 0.06) 10px, rgba(232, 190, 110, 0.06) 11px);
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-screen);
+  color: var(--text-main);
+  padding: 14px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--accent-gold-soft);
+  box-shadow: 0 12px 32px var(--shadow-strong), 0 0 0 1px var(--accent-gold-soft);
+  font-size: 15px;
+  z-index: 2000;
+  animation: toast-in 0.3s ease;
+  max-width: 80vw;
+  backdrop-filter: blur(12px);
+}
+.toast[hidden] { display: none; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+/* v8: мягкий уход тоста (класс ставит App.toast перед скрытием) */
+.toast.toast-out {
+  animation: toast-out 0.28s ease forwards;
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to   { opacity: 0; transform: translate(-50%, 14px); }
+}
+
+/* ============================================================
+   ДОСТУПНОСТЬ: уменьшенная анимация (настройка ОС)
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   СКРОЛЛБАРЫ
+   ============================================================ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-gold); }
+
+/* ============================================================
+   АДАПТИВ
+   ============================================================ */
+@media (max-width: 700px) {
+  .game-info { gap: 14px; }
+  .info-block { min-width: 48px; }
+  .info-value { font-size: 17px; }
+  .game-actions .btn-action { width: 40px; height: 40px; }
+  .btn { padding: 14px 18px; font-size: 16px; }
+  .btn-hint { display: none; }
+  .btn-arrow { display: none; }
+  .win-stats { gap: 24px; }
+  .win-stat strong { font-size: 26px; }
+  .theme-picker, .size-picker, .skin-picker { grid-template-columns: 1fr; }
+}
+
+/* v9: узкие экраны — шапка игры должна вместить 4 показателя
+   и 3 кнопки (на 390px кнопка undo раньше уходила за экран) */
+@media (max-width: 480px) {
+  .game-header { gap: 8px; padding: 8px 10px; }
+  .game-header .btn-icon-only { width: 36px; height: 36px; font-size: 20px; }
+  .game-info { gap: 6px; }
+  .info-block { min-width: 0; flex: 1; }
+  .info-label { font-size: 9px; letter-spacing: 0.08em; }
+  .info-value { font-size: 16px; }
+  .game-actions { gap: 4px; }
+  .game-actions .btn-action { width: 36px; height: 36px; }
+}
+
+/* ============================================================
+   TUTORIAL (v12) — простенькое обучение «Как играть»
+   Пошаговый оверлей с 6 слайдами и схемами из мини-фишек.
+   Мини-фишки используют переменные тем (--tile-bg, --tile-border,
+   --accent-gold…), поэтому автоматически подстраиваются под
+   все 5 тем без отдельной стилизации.
+   ============================================================ */
+
+.tutorial-overlay {
+  /* Фон чуть плотнее, чем у паузы: слайд должен читаться
+     поверх лепестков и золотой пыли меню */
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.tutorial-card {
+  background: var(--bg-screen);
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  padding: 20px 26px 22px;
+  width: min(92vw, 540px);
+  max-height: 92vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 24px 60px var(--shadow-strong);
+  animation: card-pop 0.32s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+
+/* ---------- Шапка: счётчик шагов + пропуск ---------- */
+.tutorial-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.tutorial-step {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.tutorial-skip {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: color 0.2s ease;
+}
+.tutorial-skip:hover {
+  color: var(--text-main);
+}
+
+/* ---------- Слайды ---------- */
+.tutorial-slide {
+  display: none; /* активный показывается JS (класс .active) */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  min-height: 252px;
+}
+.tutorial-slide.active {
+  display: flex;
+  animation: fade-in 0.28s ease;
+}
+.tutorial-slide-icon {
+  font-size: 42px;
+  line-height: 1;
+  color: var(--accent-gold-bright);
+  font-family: 'Noto Serif SC', serif;
+  text-shadow: 0 2px 12px var(--accent-gold-soft);
+}
+.tutorial-slide h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.tutorial-slide p {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* ---------- Точки-переключатели ---------- */
+.tutorial-dots {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  padding: 2px 0;
+}
+.tut-dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--border-soft);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.tut-dot.active {
+  background: var(--accent-gold-bright);
+  transform: scale(1.3);
+}
+
+/* ---------- Навигация ---------- */
+.tutorial-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.tutorial-nav .btn { min-width: 128px; }
+
+/* ============================================================
+   МИНИ-ФИШКИ И СХЕМЫ
+   ============================================================ */
+
+/* Сцена — пунктирная рамка, как «витрина» шага */
+.tut-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 1px dashed var(--border-soft);
+  border-radius: 14px;
+}
+
+.tut-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+/* ---------- Мини-фишка ---------- */
+.tut-tile {
+  position: relative;
+  width: 46px;
+  height: 60px;
+  border-radius: 8px;
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  box-shadow:
+    0 4px 0 var(--tile-shadow),
+    0 9px 14px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tut-tile span:not(.tut-badge) {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* Цвета глифов — как масти настоящих фишек */
+.tut-g-red   { color: #b83232; }
+.tut-g-green { color: #2a7a44; }
+.tut-g-blue  { color: #3a6a9a; }
+
+/* Закрытая — приглушённая (та же идея, что у .tile:not(.free)) */
+.tut-tile.dim {
+  filter: saturate(0.55) brightness(0.82);
+  opacity: 0.72;
+}
+/* Свободная — золотое свечение (как подсветка доступных) */
+.tut-tile.glow {
+  border-color: var(--accent-gold);
+  box-shadow:
+    0 4px 0 var(--tile-shadow),
+    0 0 16px var(--accent-gold-glow),
+    0 9px 14px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- Значки ✓/✗ на фишках ---------- */
+.tut-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Noto Sans SC', sans-serif;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.tut-badge.ok { background: #2a8a4a; }
+.tut-badge.no { background: #b83232; }
+
+.tut-verdict {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.tut-verdict.ok { color: #4aa86a; }
+.tut-verdict.no { color: #d05a5a; }
+
+/* ---------- Шаг 1: пирамида ---------- */
+.tut-pyramid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tut-pyramid > .tut-tile {
+  margin-bottom: -20px; /* верхняя фишка лежит слоем выше */
+  z-index: 2;
+}
+
+/* ---------- Шаг 2: пара ---------- */
+.tut-pair {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.tut-spark {
+  font-size: 26px;
+  color: var(--accent-gold-bright);
+  animation: tut-spark-pulse 1.2s ease-in-out infinite;
+}
+@keyframes tut-spark-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50%      { transform: scale(1.25); opacity: 1; }
+}
+
+/* ---------- Шаг 3: примеры можно/нельзя ---------- */
+.tut-examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+/* Накрытая фишка: верхняя лежит поверх, смещена вправо-вверх */
+.tut-covered { position: relative; }
+.tut-cover-top {
+  position: absolute;
+  left: 16px;
+  top: -22px;
+  z-index: 2;
+}
+.tut-covered > .tut-tile:first-child { margin-top: 12px; }
+
+/* ---------- Шаг 4: слои + легенда ---------- */
+.tut-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tut-stack-top {
+  margin-bottom: -22px; /* лежит на ряду ниже — виден «бок» */
+  z-index: 2;
+}
+.tut-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.tut-chip {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.tut-chip.gold {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold-bright);
+  background: var(--accent-gold-soft);
+}
+
+/* ---------- Шаг 5: кнопки-помощники ---------- */
+.tut-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+}
+.tut-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.tut-btn-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--accent-gold-soft);
+  color: var(--accent-gold-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Шаг 6: чипы наград ---------- */
+.tut-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.tut-chips .tut-chip { font-size: 13px; padding: 6px 14px; }
+
+/* ---------- Адаптив ---------- */
+@media (max-width: 480px) {
+  .tutorial-card { padding: 16px 14px 16px; }
+  .tutorial-slide { min-height: 224px; }
+  .tutorial-slide h3 { font-size: 20px; }
+  .tutorial-slide p { font-size: 14px; }
+  .tut-tile { width: 38px; height: 50px; }
+  .tut-tile span:not(.tut-badge) { font-size: 21px; }
+  .tut-cover-top { left: 13px; top: -18px; }
+  .tutorial-nav .btn { min-width: 100px; }
+}
