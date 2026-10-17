@@ -350,10 +350,14 @@ const Render = (function () {
 
     // v18: лёгкий «tap» при наведении мышью — обратная связь.
     // Только для mouse-устройств (на touch mouseenter не сработает).
+    // v26: звук только над СВОБОДНЫМИ фишками — он сам подсказывает,
+    // что фишку можно взять. Над заблокированными — тишина.
     el.addEventListener('mouseenter', () => {
-      if (typeof Audio2 !== 'undefined' && Audio2.hover) {
-        Audio2.hover();
-      }
+      if (typeof Audio2 === 'undefined' || !Audio2.hover) return;
+      try {
+        if (typeof Game !== 'undefined' && Game.isFree && !Game.isFree(tile)) return;
+      } catch (e) { /* нет партии — играем как обычно */ }
+      Audio2.hover();
     });
 
     return el;

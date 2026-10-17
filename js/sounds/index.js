@@ -1,38 +1,48 @@
 /* ============================================================
-   SOUNDS/INDEX.JS — Каталог звуковых эффектов (v25-sounds)
+   SOUNDS/INDEX.JS — Каталог звуковых эффектов (v26-audio)
 
-   Все звуки — в отдельных файлах в папке js/sounds/:
-     - click.js     — клик фишки
-     - match.js     — совпадение пары
-     - combo.js     — комбо-серия
-     - mismatch.js  — несовпадение
-     - hint.js      — подсказка
-     - win.js       — победа
-     - shuffle.js   — перемешать
-     - hover.js     — наведение на фишку
+   Все звуки — в отдельных файлах в папке js/sounds/.
+   Сгруппированы по роли:
 
-   Каждый звук — объект: { name, desc, play(ctx, playTone, ...args) }.
-   Чтобы заменить звук: отредактируйте нужный файл — частоты, тип
-   волны, длительность. Можно добавить новый звук: создайте файл
-   my-sound.js с Sounds.mySound = { name, desc, play() {...} },
-   подключите его в index.html перед sounds/index.js, и вызывайте
-   Audio2.mySound().
+     Взаимодействие с фишками
+       hover.js     — наведение на свободную фишку
+       click.js     — выбор фишки
+       deselect.js  — снятие выбора
+       blocked.js   — фишка занята
+     Результат хода
+       match.js     — совпадение пары
+       combo.js     — комбо-серия
+       mismatch.js  — несовпадение
+     Помощь и управление
+       hint.js      — подсказка
+       undo.js      — отмена хода
+       shuffle.js   — перемешать
+       deal.js      — раздача
+     Финал
+       win.js       — победа
 
-   Этот файл (index.js) собирает все звуки в каталог Sounds.CATALOG
-   и предоставляет хелперы.
+   Каждый звук — объект: { name, desc, play(ctx, kit, ...args) }.
+   kit — набор голосов из audio.js (bell, pure, thump, noise, tap,
+   note) и одновременно функция playTone для совместимости с v25.
    ============================================================ */
 
-// Sounds уже объявлен глобально каждым файлом звука.
-// Здесь собираем каталог.
 Sounds.CATALOG = [
+  // Фишки
+  { id: 'hover',    name: Sounds.hover.name,    desc: Sounds.hover.desc    },
   { id: 'click',    name: Sounds.click.name,    desc: Sounds.click.desc    },
+  { id: 'deselect', name: Sounds.deselect.name, desc: Sounds.deselect.desc },
+  { id: 'blocked',  name: Sounds.blocked.name,  desc: Sounds.blocked.desc  },
+  // Результат хода
   { id: 'match',    name: Sounds.match.name,    desc: Sounds.match.desc    },
   { id: 'combo',    name: Sounds.combo.name,    desc: Sounds.combo.desc    },
   { id: 'mismatch', name: Sounds.mismatch.name, desc: Sounds.mismatch.desc },
+  // Помощь и управление
   { id: 'hint',     name: Sounds.hint.name,     desc: Sounds.hint.desc     },
-  { id: 'win',      name: Sounds.win.name,      desc: Sounds.win.desc      },
+  { id: 'undo',     name: Sounds.undo.name,     desc: Sounds.undo.desc     },
   { id: 'shuffle',  name: Sounds.shuffle.name,  desc: Sounds.shuffle.desc  },
-  { id: 'hover',    name: Sounds.hover.name,    desc: Sounds.hover.desc    },
+  { id: 'deal',     name: Sounds.deal.name,     desc: Sounds.deal.desc     },
+  // Финал
+  { id: 'win',      name: Sounds.win.name,      desc: Sounds.win.desc      },
 ];
 
 // Получить звук по id

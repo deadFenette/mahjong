@@ -276,7 +276,7 @@ suite('sw.js — кэш поднят до v22-mix (4 новые раскладк
 
   test('имя кэша обновлено', () => {
     const src = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-    assertOk(/mahjong-v25-sounds/.test(src), 'ожидался кэш mahjong-v25-sounds*');
+    assertOk(/mahjong-v26-audio/.test(src), 'ожидался кэш mahjong-v26-audio*');
   });
 
   test('v20: шрифты локально в ASSETS (не с Google Fonts)', () => {

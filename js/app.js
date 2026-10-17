@@ -103,6 +103,7 @@ const App = (function () {
     Render.fitBoard(layout);
     Render.renderFull();
     Render.playDealAnimation(); // v8: каскадная раздача
+    Audio2.deal(); // v26: каскад мягких стуков
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     showScreen('game');
@@ -127,6 +128,7 @@ const App = (function () {
     Render.fitBoard(layout);
     Render.renderFull();
     Render.playDealAnimation(); // v8: каскадная раздача
+    Audio2.deal(); // v26: каскад мягких стуков
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     showScreen('game');
@@ -160,6 +162,7 @@ const App = (function () {
     Render.fitBoard(layout);
     Render.renderFull();
     Render.playDealAnimation();
+    Audio2.deal(); // v26: каскад мягких стуков
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     showScreen('game');
@@ -204,6 +207,7 @@ const App = (function () {
     Render.fitBoard(layout);
     Render.renderFull();
     Render.playDealAnimation();
+    Audio2.deal(); // v26: каскад мягких стуков
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     showScreen('game');
@@ -259,6 +263,7 @@ const App = (function () {
         setTimeout(() => el.classList.remove('shake'), 300);
       }
       buzz(8); // v9: мягкий виброотклик «сюда нельзя»
+      Audio2.blocked(); // v26: глухой «ток»
       return;
     }
 
@@ -266,6 +271,7 @@ const App = (function () {
       Audio2.click();
       Render.setSelected(tile);
     } else if (result === 'deselected') {
+      Audio2.deselect(); // v26
       Render.setSelected(null);
     } else if (result === 'matched') {
       const st = Game.getState();
@@ -473,7 +479,7 @@ const App = (function () {
       // v13: единая проверка тупика (после отмены ход есть всегда,
       // но проверка дешёвая и спасает от вырожденных сейвов)
       ensureMovesAvailable();
-      Audio2.click();
+      Audio2.undo(); // v26: свой звук отмены
       lastActionTime = Date.now();
       saveCurrentGame();
     } else {
@@ -635,6 +641,7 @@ const App = (function () {
     Render.fitBoard(layout);
     Render.renderFull();
     Render.playDealAnimation(); // v8: каскадная раздача при продолжении
+    Audio2.deal(); // v26: каскад мягких стуков
     Render.highlightFree(Storage.getSetting('highlight', true));
     updateGameInfo();
     showScreen('game');
@@ -924,6 +931,54 @@ const App = (function () {
     }
   }
 
+  // ---------- Громкость эффектов (v26) ----------
+  function applySfxVolume(pct, opts = {}) {
+    const p = Audio2.clampVolume(pct);
+    if (opts.persist !== false) Storage.setSetting('sfxVolume', p);
+    Audio2.setVolume(p);
+    const out = document.getElementById('setting-sfx-volume-out');
+    const slider = document.getElementById('setting-sfx-volume');
+    if (out) out.textContent = p + '%';
+    if (slider) {
+      slider.value = String(p);
+      slider.style.setProperty('--range-fill', p + '%');
+    }
+  }
+
+  // ---------- Сборник музыки (v26) ----------
+  function buildTrackSelect() {
+    const sel = document.getElementById('setting-music-track');
+    if (!sel) return;
+    sel.innerHTML = '';
+    const auto = document.createElement('option');
+    auto.value = 'auto';
+    auto.textContent = 'Авто — плейлист';
+    sel.appendChild(auto);
+    Music.getTracks().forEach(t => {
+      const o = document.createElement('option');
+      o.value = t.id;
+      o.textContent = t.name;
+      sel.appendChild(o);
+    });
+  }
+
+  function updateNowPlaying() {
+    const mode = Music.getTrackMode();
+    const sel = document.getElementById('setting-music-track');
+    if (sel) sel.value = mode;
+    const el = document.getElementById('music-now-playing');
+    if (el) {
+      const name = Music.getTrack().name;
+      el.textContent = (mode === 'auto' ? 'Авто · сейчас: ' : 'По кругу: ') + name;
+    }
+  }
+
+  function applyMusicTrack(id, opts = {}) {
+    Music.setTrack(id);
+    if (opts.persist !== false) Storage.setSetting('musicTrack', Music.getTrackMode());
+    updateNowPlaying();
+  }
+
   function loadSettings() {
     applyTheme(Storage.getSetting('theme', 'traditional'));
     applyTileSize(Storage.getSetting('tileSize', 'large'));
@@ -934,6 +989,9 @@ const App = (function () {
     // v10: музыка — тумблер, громкость и заливка слайдера
     applyMusicEnabled(Storage.getSetting('music', true), { persist: false });
     applyMusicVolume(Storage.getSetting('musicVolume', Music.VOLUME_DEFAULT), { persist: false });
+    buildTrackSelect();
+    updateNowPlaying();
+    applySfxVolume(Storage.getSetting('sfxVolume', Audio2.VOLUME_DEFAULT), { persist: false });
     document.getElementById('setting-sound').checked = Storage.getSetting('sound', true);
     document.getElementById('setting-win-sound').checked = Storage.getSetting('winSound', true);
     document.getElementById('setting-highlight').checked = Storage.getSetting('highlight', true);
@@ -1043,7 +1101,9 @@ const App = (function () {
       theme: Storage.getSetting('theme', 'traditional'),
       enabled: Storage.getSetting('music', true),
       volumePct: Storage.getSetting('musicVolume', Music.VOLUME_DEFAULT),
+      track: Storage.getSetting('musicTrack', 'auto'), // v26: сборник
     });
+    Music.onTrackChange(updateNowPlaying);
     Render.init(document.getElementById('board'));
     loadSettings();
     updateMenuStats();
@@ -1114,6 +1174,7 @@ const App = (function () {
         Render.fitBoard(state.layout);
         Render.renderFull();
         Render.playDealAnimation(); // v8
+        Audio2.deal(); // v26: каскад мягких стуков
         Render.highlightFree(Storage.getSetting('highlight', true));
         updateGameInfo();
         startTimer();
@@ -1140,6 +1201,7 @@ const App = (function () {
         Render.fitBoard(state.layout);
         Render.renderFull();
         Render.playDealAnimation(); // v8
+        Audio2.deal(); // v26: каскад мягких стуков
         Render.highlightFree(Storage.getSetting('highlight', true));
         updateGameInfo();
         showScreen('game');
@@ -1205,6 +1267,36 @@ const App = (function () {
       Storage.setSetting('winSound', e.target.checked);
       Audio2.setWinEnabled(e.target.checked);
     });
+
+    // v26: громкость эффектов (по отпусканию ползунка — пробный звук)
+    const sfxVolSlider = document.getElementById('setting-sfx-volume');
+    if (sfxVolSlider) {
+      sfxVolSlider.addEventListener('input', e => {
+        applySfxVolume(Number(e.target.value));
+      });
+      sfxVolSlider.addEventListener('change', () => Audio2.previewSound('match'));
+    }
+
+    // v26: сборник — выбор пьесы и «следующая»
+    const trackSel = document.getElementById('setting-music-track');
+    if (trackSel) {
+      trackSel.addEventListener('change', e => {
+        applyMusicTrack(e.target.value);
+        if (!Music.isPlaying() && Storage.getSetting('music', true)) Music.start();
+        Audio2.click();
+      });
+    }
+    const nextTrackBtn = document.getElementById('setting-music-next');
+    if (nextTrackBtn) {
+      nextTrackBtn.addEventListener('click', () => {
+        if (!Storage.getSetting('music', true)) applyMusicEnabled(true);
+        const t = Music.nextTrack();
+        Storage.setSetting('musicTrack', Music.getTrackMode());
+        updateNowPlaying();
+        toast('♪ ' + t.name);
+        Audio2.click();
+      });
+    }
 
     // v10: фоновая музыка — тумблер, громкость, кнопка в паузе
     document.getElementById('setting-music').addEventListener('change', e => {

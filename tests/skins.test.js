@@ -278,7 +278,7 @@ suite('Скины — интеграция с index.html и app.js', () => {
     const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
     assertOk(sw.includes('js/tileset-classic.js'), 'sw должен кэшировать tileset-classic.js');
     assertOk(sw.includes('js/tileset-ornate.js'), 'sw должен кэшировать tileset-ornate.js');
-    // v22: кэш поднят до mahjong-v25-sounds (4 новые раскладки + миксы)
-    assertOk(/mahjong-v25-sounds/.test(sw), 'кэш должен быть mahjong-v25-sounds');
+    // v22: кэш поднят до mahjong-v26-audio (4 новые раскладки + миксы)
+    assertOk(/mahjong-v26-audio/.test(sw), 'кэш должен быть mahjong-v26-audio');
   });
 });

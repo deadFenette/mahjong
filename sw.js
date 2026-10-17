@@ -3,7 +3,7 @@
    Кэшируем все файлы при первой загрузке
    ============================================================ */
 
-const CACHE_NAME = 'mahjong-v25-sounds';
+const CACHE_NAME = 'mahjong-v26-audio';
 const ASSETS = [
   './',
   './index.html',
@@ -28,16 +28,20 @@ const ASSETS = [
   './js/tileset-ornate.js',
   './js/tileset.js',
   './js/layouts.js',
-  // v25-sounds: модульные звуковые эффекты — каждый звук в отдельном файле
+  // v26-audio: модульные звуковые эффекты — каждый звук в отдельном файле
   './js/sounds/init.js',
+  './js/sounds/hover.js',
   './js/sounds/click.js',
+  './js/sounds/deselect.js',
+  './js/sounds/blocked.js',
   './js/sounds/match.js',
   './js/sounds/combo.js',
   './js/sounds/mismatch.js',
   './js/sounds/hint.js',
-  './js/sounds/win.js',
+  './js/sounds/undo.js',
   './js/sounds/shuffle.js',
-  './js/sounds/hover.js',
+  './js/sounds/deal.js',
+  './js/sounds/win.js',
   './js/sounds/index.js',
   './js/audio.js',
   './js/music.js',

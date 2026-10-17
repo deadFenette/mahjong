@@ -498,18 +498,42 @@
                  min="0" max="100" step="5" value="35"
                  aria-label="Громкость фоновой музыки" />
         </div>
+        <div class="setting-block">
+          <div class="setting-row">
+            <span class="setting-label">
+              <span class="setting-name">Сборник</span>
+              <span class="setting-desc" id="music-now-playing">Авто — пьесы сменяют друг друга</span>
+            </span>
+          </div>
+          <div class="music-picker">
+            <select class="setting-select" id="setting-music-track" aria-label="Выбор пьесы"></select>
+            <button class="btn btn-ghost" id="setting-music-next" type="button">Следующая ⏭</button>
+          </div>
+        </div>
       </div>
 
       <div class="setting-group">
-        <h3 class="setting-title">Звук</h3>
+        <h3 class="setting-title">Звуки игры</h3>
         <label class="setting-row toggle-row">
           <span class="setting-label">
-            <span class="setting-name">Звук клика</span>
-            <span class="setting-desc">Мягкий звук при выборе фишки</span>
+            <span class="setting-name">Звуковые эффекты</span>
+            <span class="setting-desc">Мягкие звуки выбора, пар, комбо и подсказок</span>
           </span>
           <input type="checkbox" id="setting-sound" class="toggle" />
           <span class="toggle-switch"></span>
         </label>
+        <div class="setting-block">
+          <div class="setting-row range-row">
+            <span class="setting-label">
+              <span class="setting-name">Громкость эффектов</span>
+              <span class="setting-desc">Отдельно от громкости музыки</span>
+            </span>
+            <output class="range-output" id="setting-sfx-volume-out" for="setting-sfx-volume">70%</output>
+          </div>
+          <input type="range" class="range-slider" id="setting-sfx-volume"
+                 min="0" max="100" step="5" value="70"
+                 aria-label="Громкость звуковых эффектов" />
+        </div>
         <label class="setting-row toggle-row">
           <span class="setting-label">
             <span class="setting-name">Звук победы</span>
@@ -680,19 +704,23 @@
   <script src="js/tileset-ornate.js"></script>
   <script src="js/tileset.js"></script>
   <script src="js/layouts.js"></script>
-  <!-- v25-sounds: модульные звуковые эффекты.
-       Каждый звук — отдельный файл в js/sounds/. Чтобы заменить звук,
-       отредактируйте нужный файл. Чтобы добавить — создайте новый
-       и подключите здесь перед sounds/index.js. -->
+  <!-- v26-audio: модульные звуковые эффекты.
+       Каждый звук — отдельный файл в js/sounds/. Чтобы добавить звук,
+       создайте файл по образцу и подключите его здесь перед
+       sounds/index.js (а также в sw.js и CATALOG). -->
   <script src="js/sounds/init.js"></script>
+  <script src="js/sounds/hover.js"></script>
   <script src="js/sounds/click.js"></script>
+  <script src="js/sounds/deselect.js"></script>
+  <script src="js/sounds/blocked.js"></script>
   <script src="js/sounds/match.js"></script>
   <script src="js/sounds/combo.js"></script>
   <script src="js/sounds/mismatch.js"></script>
   <script src="js/sounds/hint.js"></script>
-  <script src="js/sounds/win.js"></script>
+  <script src="js/sounds/undo.js"></script>
   <script src="js/sounds/shuffle.js"></script>
-  <script src="js/sounds/hover.js"></script>
+  <script src="js/sounds/deal.js"></script>
+  <script src="js/sounds/win.js"></script>
   <script src="js/sounds/index.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/music.js"></script>

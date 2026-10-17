@@ -19,6 +19,7 @@ require('./animations.test.js');
 require('./improvements.test.js');
 require('./music.test.js');
 require('./audio.test.js');
+require('./audio-engine.test.js');
 require('./combo.test.js');
 require('./tutorial.test.js');
 require('./endgame.test.js');

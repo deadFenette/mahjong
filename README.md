@@ -5,12 +5,12 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 
 ## Features
 
-- **20 layouts** — 8 base + 8 canonical v18 + 4 v22: Pyramid, Turtle, Cross, Wall, Boat, Butterfly, Heart, Spider, Fortress, Tower, Bridge, Cloud, Pagoda, Crystal, Star, Flower, Dragon, Fan, Labyrinth, Square
+- **28 layouts** — 8 base + 8 canonical v18 + 4 v22 + 8 v28: Pyramid, Turtle, Cross, Wall, Boat, Butterfly, Heart, Spider, Fortress, Tower, Bridge, Cloud, Pagoda, Crystal, Star, Flower, Dragon, Fan, Labyrinth, Square, Crown, Hourglass, Mushroom, Fish, Stairs, Barrel, Lighthouse, Ornament
 - **Built-in tutorial** — a simple 6-step "How to play" walkthrough with mini-tile diagrams (goal, matching pairs, free vs. blocked tiles, how to tell layers apart, helper buttons); opens automatically on first launch, reopens from the main menu, and the final "Play!" button starts the easy Pyramid layout
 - **5 tile sizes (v19)** — Tiny / Small / Medium / Large (default) / Extra-large, switchable in Settings or via `+` / `−` keys / zoom button during play
 - **144 canonical tiles** — dots, bamboo, characters, winds, dragons, flowers, seasons
 - **Two switchable tile skins (v19-skins)** — Classic (clean minimal, no gold frames, the default) and Ornate (ultra-traditional: golden engraved frame with corner pearls, soft inner glow, gradient-shaded symbols with stroke highlights). Pick one in Settings → "Tile skin"; the board re-renders live, even mid-game.
-- **Generative background music** — a quiet ambient score synthesized live via the Web Audio API (no audio files); every theme has its own mood — scale, tempo, and timbre — with a toggle in Settings, a quick switch in the pause menu, a volume slider, and automatic ducking while paused
+- **Music collection (v26-audio)** — a collection of 7 composed pieces synthesized live via the Web Audio API (no audio files): each has its own key, tempo, 8-bar harmony, three melodic motifs and an A–B–A–C form, with bass, pad, arpeggio, light human timing and ornaments on repeats. Every theme has a signature piece; in **Auto** mode the pieces play as a playlist with soft fade-outs (never the same piece twice in a row), or pick one piece to loop. Settings: toggle, volume, track picker, "Next" button; the pause menu has a quick switch; music ducks while paused
 - **Polished animations** — cascading tile deal, matched pairs attract and dissolve with a golden spark burst, floating score popups, value-change pulses, staggered menu/card entrances, golden dust rising through the main menu, celebratory win screen
 - **Two modes** — Classic (pick a layout, clear it, win) and Endless (layouts chain one after another, score accumulates)
 - **Daily Mahjong (v21)** — one deterministic layout per calendar day (UTC), same for every player; click the 日 tile in the menu. Even-numbered days use a **Mix** — two layouts combined side by side; odd-numbered days use a single layout. Play as many times as you like, best score/time for the day is tracked.
@@ -18,8 +18,8 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 - **Decorated main menu (v18)** — hanging red lanterns with 福/寿 glyphs in the top corners, lucky cloud ornaments, bamboo grove silhouette at the bottom, four red seal-stamps at the corners (禄/禧); the existing title tiles and rack of menu buttons are preserved untouched
 - **Decorated game field (v18)** — vertical calligraphy scrolls on the left (和 平 安 康) and right (福 禄 寿 喜) of the board, golden tassel ornaments at the four corners of the table; hidden on narrow screens
 - **Ambient background (v18)** — a barely audible pink-noise pad at ~-40 dB simulates the hush of a tea ceremony; gentle LFO modulation makes the noise "breathe" (1 cycle per 14 s). Generated entirely via Web Audio, no audio files.
-- **Per-theme timbres (v18)** — each theme now has its own pluck timbre: Imperial = metal (sawtooth + sharper lowpass + detune), Porcelain = glass (sine + 3rd & 5th harmonics), Jade & Night = koto (sine + soft square octave), Traditional = guzheng (triangle + sine octave shimmer).
-- **Hover feedback (v19)** — a warm "wooden tap" on mouseenter over a tile: 660 Hz sine with a 220 Hz triangle undertone for a soft lacquered-bone feel (not a high-pitched beep), throttled to 60 ms so fast mouse movement doesn't blur into noise. Touch devices are unaffected.
+- **Per-piece timbres** — Imperial = bronze (two slightly detuned sines + inharmonic bell partials), Porcelain = glass (sine + 3rd & 5th harmonics), Jade & Night = koto (sine + soft triangle octave), Traditional = guzheng (triangle + sine octave shimmer). Only soft waveforms (no sawtooth/square), all through a lowpass and a convolution-reverb "hall".
+- **Hover feedback** — a clean, quiet pure-sine note (taken from the key of the playing music) on mouseenter over a *free* tile, so the sound itself tells you the tile can be picked; blocked tiles stay silent. Throttled to 60 ms. Touch devices are unaffected.
 - **Combo streaks** — clear pairs back-to-back (within 5 seconds) to build a ×2…×8 multiplier worth bonus points, with its own rising chime and a golden "Combo ×N" popup
 - **8 achievements** — from "First win" and "Clean win" (no hints, shuffles, or undos) to "Combo ×5", speed runs, and layout collections; new ones announce with a toast and appear highlighted on the win screen
 - **5 themes** — Traditional (ivory, dark wood, gold), Jade (pastel marble), Porcelain (vintage blue and gold), Night (black lacquer, gold, ivory tiles), Imperial (crimson lacquer and abundant gold)
@@ -32,7 +32,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 - **Statistics** — games played, wins, best score, best time; a golden "New record!" badge appears on the win screen when you beat your best score or time
 - **Fullscreen mode** — one click in the pause menu (hidden where the API is unsupported)
 - **Haptic feedback** — light vibration on match and win on mobile devices
-- **Sound** — effects and music generated via the Web Audio API, no audio files
+- **Sound effects (v26-audio)** — 12 soft synthesized sounds (hover, select, deselect, blocked, match, combo, mismatch, hint, undo, shuffle, deal, win) on a shared bus: separate volume slider, a limiter against clipping and one shared reverb so everything sounds like it comes from the same room. Effects are played in the **key of the current music piece** (pentatonic degrees, never detuned — combos climb the scale instead of multiplying frequency). No audio files; add your own sound by dropping a file into `js/sounds/` (see the header of `js/audio.js`)
 - **Accessibility** — five tile sizes from "Tiny" to "Extra-large", configurable blocked-tile transparency (0–50%), free tiles are always opaque, `prefers-reduced-motion` supported, toasts announced to screen readers
 
 ## Quick start
@@ -57,7 +57,7 @@ No frameworks, no build step, no runtime dependencies — and it runs fully offl
 node tests/run.js
 ```
 
-975+ dependency-free assertions (Node.js only) cover layouts (incl. mix generator: combineLayouts, pickMixPair, getMixFromSeed — valid positions, no collisions, even tile count, deterministic), the tile set, game logic, combo math, the tutorial's slide catalog and navigation, endgame solvability (unique tile ids on oversized layouts and auto-recovery from deadlocked boards, 6 stress games × 20 layouts = 120 always-winnable parties), scaling math (incl. 5 tile sizes), animation math, the music engine's pure math (incl. per-theme timbres and ambient pad), the tile-skin switcher, the warm wooden hover sound, the custom confirm overlay, self-hosted fonts, favicons in SW cache, Daily Mahjong (deterministic seed per UTC date, even days use mix, daily statistics), save optimization, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
+1260+ dependency-free assertions (Node.js only) cover layouts (incl. mix generator: combineLayouts, pickMixPair, getMixFromSeed — valid positions, no collisions, even tile count, deterministic), the tile set, game logic, combo math, the tutorial's slide catalog and navigation, endgame solvability (unique tile ids on oversized layouts and auto-recovery from deadlocked boards, 6 stress games × 28 layouts = 168 always-winnable parties), scaling math (incl. 5 tile sizes), animation math, the music engine's pure math (incl. per-theme timbres and ambient pad), the tile-skin switcher, the clean hover sound, a mock-AudioContext runtime check of every sound effect and of the music scheduler (envelopes, playlist, track switching), the custom confirm overlay, self-hosted fonts, favicons in SW cache, Daily Mahjong (deterministic seed per UTC date, even days use mix, daily statistics), save optimization, storage, appearance settings, the game clock, savegame history serialization, and theme variable parity. GitHub Actions runs the suite on every push — see `.github/workflows/tests.yml`.
 
 ## Project structure
 
@@ -73,11 +73,12 @@ mahjong/
 │   └── themes.css      The five themes
 ├── js/
 │   ├── tileset.js      144 tiles and matching rules
-│   ├── layouts.js      The 20 layouts + mix generator
+│   ├── layouts.js      The 28 layouts + mix generator
 │   ├── game.js         Game logic
 │   ├── render.js       Rendering and scaling
-│   ├── audio.js        Web Audio sound effects
-│   ├── music.js        Generative background music
+│   ├── audio.js        Sound-effect engine (shared bus, reverb, limiter, voice kit)
+│   ├── sounds/         One file per sound effect + catalog (index.js)
+│   ├── music.js        Music collection: 7 composed pieces, playlist, synth voices
 │   ├── achievements.js Achievements (pure logic)
 │   ├── tutorial.js     Tutorial walkthrough (pure logic + runtime)
 │   ├── storage.js      Settings and progress persistence

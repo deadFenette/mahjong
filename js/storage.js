@@ -18,6 +18,8 @@ const Storage = (function () {
     tileSkin: 'classic', // v19-skins: 'classic' (по умолчанию) или 'ornate'
     music: true,       // v10: фоновая музыка включена по умолчанию (тихая)
     musicVolume: 35,   // v10: громкость музыки, % — «тихо и ненавязчиво»
+    musicTrack: 'auto', // v26: 'auto' — плейлист сборника, иначе id пьесы
+    sfxVolume: 70,     // v26: громкость звуковых эффектов, %
     tutorialSeen: false, // v12: обучение показано при первом визите
   };
 

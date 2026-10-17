@@ -815,11 +815,294 @@ const Layouts = (function () {
     ],
   };
 
+  // ============================================================
+  //  НОВЫЕ РАСКЛАДКИ v28: Crown, Hourglass, Mushroom, Fish,
+  //  Stairs, Barrel, Lighthouse, Ornament — 8 свежих форм.
+  //  Все следуют правилам геометрии: чётное число фишек (≥60),
+  //  каждая верхняя фишка опирается на нижний слой (±0.5),
+  //  размеры 8–16 по ширине и 6–14 по высоте.
+  // ============================================================
+
+  // 21. Корона — корона с тремя зубцами, maxWidth=14, height=6
+  const crown = {
+    id: 'crown',
+    name: 'Корона',
+    description: 'Корона с тремя зубцами — символ власти',
+    difficulty: 'normal',
+    icon: '♛',
+    layers: [
+      // z=0: 14×6 — основание короны (84 фишки)
+      ['XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX'],
+      // z=1: 14×4 — средний ярус с прорезями (40 фишек)
+      ['XX  XXXXXX  XX',
+       'XX  XXXXXX  XX',
+       'XX  XXXXXX  XX',
+       'XX  XXXXXX  XX'],
+      // z=2: 14×2 — зубцы (12 фишек)
+      ['XX    XX    XX',
+       'XX    XX    XX'],
+      // z=3: 14×1 — острия (4 фишки)
+      ['XX          XX'],
+    ],
+  };
+
+  // 22. Песочные часы — узкая середина, широкие края, maxWidth=12, height=10
+  const hourglass = {
+    id: 'hourglass',
+    name: 'Песочные часы',
+    description: 'Время течёт — узкая середина, широкие края',
+    difficulty: 'normal',
+    icon: '⌛',
+    layers: [
+      // z=0: 12×10 — силуэт песочных часов (80 фишек)
+      ['XXXXXXXXXXXX',
+       ' XXXXXXXXXX ',
+       '  XXXXXXXX  ',
+       '   XXXXXX   ',
+       '    XXXX    ',
+       '    XXXX    ',
+       '   XXXXXX   ',
+       '  XXXXXXXX  ',
+       ' XXXXXXXXXX ',
+       'XXXXXXXXXXXX'],
+      // z=1: 12×6 — внутренний конус (36 фишек)
+      ['  XXXXXXXX  ',
+       '   XXXXXX   ',
+       '    XXXX    ',
+       '    XXXX    ',
+       '   XXXXXX   ',
+       '  XXXXXXXX  '],
+      // z=2: 12×4 — узкая перемычка (20 фишек)
+      ['   XXXXXX   ',
+       '    XXXX    ',
+       '    XXXX    ',
+       '   XXXXXX   '],
+      // z=3: 12×2 — пиковая точка (8 фишек)
+      ['    XXXX    ',
+       '    XXXX    '],
+    ],
+  };
+
+  // 23. Гриб — шляпка сверху, ножка снизу, maxWidth=12, height=10
+  const mushroom = {
+    id: 'mushroom',
+    name: 'Гриб',
+    description: 'Шляпка и ножка — лесной мотив',
+    difficulty: 'easy',
+    icon: '🍄',
+    layers: [
+      // z=0: 12×10 — силуэт гриба (82 фишки)
+      ['  XXXXXXXX  ',
+       'XXXXXXXXXXXX',
+       'XXXXXXXXXXXX',
+       'XXXXXXXXXXXX',
+       '   XXXXXX   ',
+       '   XXXXXX   ',
+       '   XXXXXX   ',
+       '   XXXXXX   ',
+       '   XXXXXX   ',
+       '  XXXXXXXX  '],
+      // z=1: 12×6 — шляпка + верх ножки (40 фишек)
+      ['  XXXXXXXX  ',
+       '  XXXXXXXX  ',
+       '   XXXXXX   ',
+       '   XXXXXX   ',
+       '   XXXXXX   ',
+       '   XXXXXX   '],
+      // z=2: 12×3 — середина ножки (18 фишек)
+      ['   XXXXXX   ',
+       '   XXXXXX   ',
+       '   XXXXXX   '],
+      // z=3: 12×1 — шляпка гриба (4 фишки)
+      ['    XXXX    '],
+    ],
+  };
+
+  // 24. Рыба — тело + хвост, maxWidth=14, height=7
+  const fish = {
+    id: 'fish',
+    name: 'Рыба',
+    description: 'Плывущая рыба с раздвоенным хвостом',
+    difficulty: 'normal',
+    icon: '🐟',
+    layers: [
+      // z=0: 14×7 — силуэт рыбы (86 фишек)
+      ['XX    XXXXXXXX',
+       'XXXX  XXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXX  XXXXXXXX',
+       'XX    XXXXXXXX'],
+      // z=1: 14×4 — тело рыбы (56 фишек)
+      ['XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX'],
+      // z=2: 14×2 — спинка (20 фишек)
+      ['  XXXXXXXXXX  ',
+       '  XXXXXXXXXX  '],
+      // z=3: 14×1 — плавник (6 фишек)
+      ['    XXXXXX    '],
+    ],
+  };
+
+  // 25. Лестница — ступенчатый подъём, maxWidth=14, height=8
+  const stairs = {
+    id: 'stairs',
+    name: 'Лестница',
+    description: 'Ступенчатый подъём — путь наверх',
+    difficulty: 'normal',
+    icon: '🪜',
+    layers: [
+      // z=0: 14×8 — лестница вверх-вправо (88 фишек)
+      ['      XXXXXXXX',
+       '      XXXXXXXX',
+       '    XXXXXXXXXX',
+       '    XXXXXXXXXX',
+       '  XXXXXXXXXXXX',
+       '  XXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXX'],
+      // z=1: 14×4 — средняя ступень (32 фишки)
+      ['    XXXXXXXX  ',
+       '    XXXXXXXX  ',
+       '    XXXXXXXX  ',
+       '    XXXXXXXX  '],
+      // z=2: 14×2 — верхняя ступень (8 фишек)
+      ['      XXXX    ',
+       '      XXXX    '],
+      // z=3: 14×1 — вершинка (2 фишки)
+      ['       XX     '],
+    ],
+  };
+
+  // 26. Бочка — пухлая вертикальная форма, maxWidth=10, height=10
+  const barrel = {
+    id: 'barrel',
+    name: 'Бочка',
+    description: 'Пухлая бочка — классическая тара',
+    difficulty: 'easy',
+    icon: '🛢',
+    layers: [
+      // z=0: 10×10 — силуэт бочки (84 фишки)
+      ['  XXXXXX  ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       'XXXXXXXXXX',
+       'XXXXXXXXXX',
+       'XXXXXXXXXX',
+       'XXXXXXXXXX',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       '  XXXXXX  '],
+      // z=1: 10×6 — средний ярус (48 фишек)
+      [' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX '],
+      // z=2: 10×4 — узкое горлышко (16 фишек)
+      ['   XXXX   ',
+       '   XXXX   ',
+       '   XXXX   ',
+       '   XXXX   '],
+      // z=3: 10×2 — крышка (4 фишки)
+      ['    XX    ',
+       '    XX    '],
+    ],
+  };
+
+  // 27. Маяк — высокий, сужается кверху, maxWidth=10, height=12, 5 слоёв
+  const lighthouse = {
+    id: 'lighthouse',
+    name: 'Маяк',
+    description: 'Высокий маяк с пятью ярусами',
+    difficulty: 'hard',
+    icon: '🗼',
+    layers: [
+      // z=0: 10×12 — основание маяка (94 фишки)
+      ['XXXXXXXXXX',
+       'XXXXXXXXXX',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       '  XXXXXX  ',
+       '  XXXXXX  ',
+       '  XXXXXX  '],
+      // z=1: 10×8 — второй ярус (62 фишки)
+      [' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       ' XXXXXXXX ',
+       '  XXXXXX  '],
+      // z=2: 10×5 — третий ярус (30 фишек)
+      ['  XXXXXX  ',
+       '  XXXXXX  ',
+       '  XXXXXX  ',
+       '  XXXXXX  ',
+       '  XXXXXX  '],
+      // z=3: 10×3 — четвёртый ярус (12 фишек)
+      ['   XXXX   ',
+       '   XXXX   ',
+       '   XXXX   '],
+      // z=4: 10×1 — фонарь (2 фишки)
+      ['    XX    '],
+    ],
+  };
+
+  // 28. Орнамент — симметричный узор с боковыми крыльями, maxWidth=16, height=7
+  const ornament = {
+    id: 'ornament',
+    name: 'Орнамент',
+    description: 'Декоративный узор с боковыми крыльями',
+    difficulty: 'hard',
+    icon: '✶',
+    layers: [
+      // z=0: 16×7 — узор с крыльями (102 фишки)
+      ['XX  XXXXXXXX  XX',
+       'XXXX XXXXXX XXXX',
+       'XXXXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXXXX',
+       'XXXXXXXXXXXXXXXX',
+       'XXXX XXXXXX XXXX',
+       'XX  XXXXXXXX  XX'],
+      // z=1: 16×6 — внутренний медальон (48 фишек)
+      ['    XXXXXXXX    ',
+       '    XXXXXXXX    ',
+       '  XXXXXXXXXX    ',
+       '  XXXXXXXXXX    ',
+       '    XXXXXXXX    ',
+       '    XXXXXXXX    '],
+      // z=2: 16×4 — центральный крест (24 фишки)
+      ['      XXXX      ',
+       '    XXXXXXXX    ',
+       '    XXXXXXXX    ',
+       '      XXXX      '],
+      // z=3: 16×1 — пиковая точка (2 фишки)
+      ['       XX       '],
+    ],
+  };
+
   // ---------- Регистрация ----------
   const all = [
     pyramid, turtle, cross, wall, boat, butterfly, heart, spider,
     fortress, tower, bridge, cloud, pagoda, crystal, star, flower,
     dragon, fan, labyrinth, square,
+    crown, hourglass, mushroom, fish, stairs, barrel, lighthouse, ornament,
   ];
 
   const layouts = all.map(layout => {

@@ -1788,3 +1788,39 @@ body[data-screen="settings"] #screen-settings {
   .tut-cover-top { left: 13px; top: -18px; }
   .tutorial-nav .btn { min-width: 100px; }
 }
+
+/* ---------- Сборник музыки (v26-audio) ---------- */
+.music-picker {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  margin: 2px 0 12px;
+}
+.setting-select {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+}
+.setting-select:hover {
+  background: var(--btn-bg-hover);
+}
+.setting-select:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+.setting-select option {
+  color: #222;
+  background: #fff;
+}
+.music-picker .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
