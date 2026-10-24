@@ -1,0 +1,142 @@
+/* ============================================================
+   BASE.CSS — Базовые стили: переменные, фон, экраны
+   ГЛАВНОЕ: каждый .screen имеет opaque background, наложений нет
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Noto Sans SC', 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  background: var(--bg-solid);
+  color: var(--text-main);
+  font-size: 16px;
+  transition: background 0.5s ease, color 0.5s ease;
+  position: relative;
+}
+
+/* ============================================================
+   АТМОСФЕРНЫЕ СЛОИ ФОНА
+   ============================================================ */
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.atmosphere-gradient {
+  position: absolute;
+  inset: 0;
+  background: var(--atm-gradient);
+}
+.atmosphere-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: var(--atm-pattern);
+  background-size: var(--atm-pattern-size, 80px 80px);
+  opacity: var(--atm-pattern-opacity, 0.15);
+}
+.atmosphere-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center,
+    transparent 0%,
+    transparent 40%,
+    var(--atm-vignette) 100%);
+}
+
+/* ============================================================
+   ЭКРАНЫ — каждый с непрозрачным фоном, наложений нет
+   v8: красивая смена экранов — вход с лёгким подъёмом.
+   ВАЖНО: fill-mode backwards, а НЕ both — иначе после
+   анимации навсегда останется transform, и экран станет
+   containing block для position:fixed детей (пауза-оверлей).
+   ============================================================ */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1;
+  background: var(--bg-screen);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.screen.active {
+  display: flex;
+  opacity: 1;
+  animation: screen-in 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.996); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* Чтобы при первом показе не было рывка */
+body[data-screen="menu"] #screen-menu,
+body[data-screen="layouts"] #screen-layouts,
+body[data-screen="difficulty"] #screen-difficulty,
+body[data-screen="mix"] #screen-mix,
+body[data-screen="game"] #screen-game,
+body[data-screen="win"] #screen-win,
+body[data-screen="settings"] #screen-settings {
+  display: flex;
+  opacity: 1;
+}
+
+/* Золотая пыль (v10) — медленные искры, поднимающиеся из глубины
+   меню. Лёгкая, глубокий фон не перекрывает; reduced-motion гасит. */
+.menu-dust {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+.dust-mote {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--accent-gold-bright) 0%,
+    var(--accent-gold) 45%,
+    transparent 72%);
+  opacity: 0;
+  filter: drop-shadow(0 0 4px var(--accent-gold-soft));
+  animation: dust-rise linear infinite;
+}
+@keyframes dust-rise {
+  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  12%  { opacity: 0.8; }
+  55%  { opacity: 0.45; }
+  100% { transform: translate(var(--dx, 0px), -108vh) scale(1); opacity: 0; }
+}
+
+/* v8: пульс значения, когда оно изменилось (ставит App.bumpValue) */
+.info-value.bump,
+.stat-value.bump {
+  animation: value-bump 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes value-bump {
+  0%   { transform: scale(1); }
+  35%  {
+    transform: scale(1.22);
+    color: var(--accent-gold-bright);
+    text-shadow: 0 0 12px var(--accent-gold-glow);
+  }
+  100% { transform: scale(1); }
+}
+

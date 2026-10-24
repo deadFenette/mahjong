@@ -1,0 +1,311 @@
+/* ============================================================
+   НАСТРОЙКИ
+   ============================================================ */
+.settings-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+.setting-group {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.setting-group:last-child {
+  border-bottom: none;
+}
+.setting-group.danger {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 24px;
+}
+.setting-title {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  font-size: 16px;
+  gap: 16px;
+}
+.setting-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.setting-name {
+  font-size: 16px;
+  color: var(--text-main);
+}
+.setting-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---------- Слайдер прозрачности ---------- */
+.setting-block {
+  padding: 4px 0 2px;
+}
+.range-row {
+  align-items: flex-start;
+  padding-bottom: 10px;
+}
+.range-output {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-gold);
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+}
+.range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    var(--accent-gold) 0%,
+    var(--accent-gold) var(--range-fill, 0%),
+    var(--border-soft) var(--range-fill, 0%),
+    var(--border-soft) 100%);
+  outline: none;
+  cursor: pointer;
+  margin: 2px 0 12px;
+  box-shadow: inset 0 1px 3px var(--shadow-soft);
+}
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--accent-gold-bright) 0%, var(--accent-gold-dark) 100%);
+  border: 2px solid var(--accent-gold-dark);
+  box-shadow: 0 2px 6px var(--shadow-medium), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+.range-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--accent-gold-bright) 0%, var(--accent-gold-dark) 100%);
+  border: 2px solid var(--accent-gold-dark);
+  box-shadow: 0 2px 6px var(--shadow-medium);
+  cursor: pointer;
+}
+.range-slider:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 4px;
+}
+
+/* Toggle switch */
+.toggle-row { cursor: pointer; }
+.toggle {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-switch {
+  width: 48px;
+  height: 26px;
+  background: var(--border-soft);
+  border-radius: 13px;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 3px var(--shadow-soft);
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease, box-shadow 0.2s;
+  box-shadow: 0 1px 3px var(--shadow-medium);
+}
+.toggle:checked + .toggle-switch {
+  background: var(--accent-gold);
+}
+.toggle:checked + .toggle-switch::after {
+  transform: translateX(22px);
+  box-shadow: 0 1px 4px var(--shadow-strong);
+}
+
+.theme-picker, .size-picker, .skin-picker {
+  display: grid;
+  /* v19: 5 размеров — уменьшили minmax, чтобы на широком экране
+     все карточки помещались в один ряд */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+.theme-card, .size-card, .opt-card, .skin-card {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  font-family: inherit;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+/* v33: три образца лиц на карточке скина */
+.skin-sample {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.skin-sample-tile {
+  display: block;
+  width: 30px;
+  height: 40px;
+  padding: 2px;
+  background: #fdf8ea;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+.skin-sample-tile svg { display: block; width: 100%; height: 100%; }
+.size-name, .skin-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+.size-desc, .skin-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.theme-card:hover, .size-card:hover, .opt-card:hover, .skin-card:hover {
+  border-color: var(--accent-gold);
+  transform: translateY(-2px);
+}
+.theme-card.active, .size-card.active, .opt-card.active, .skin-card.active {
+  border-color: var(--accent-gold);
+  background: var(--card-bg-active);
+  box-shadow: 0 0 0 1px var(--accent-gold-soft);
+}
+.theme-preview {
+  width: 100%;
+  height: 70px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+}
+.theme-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.theme-desc {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Превью тем — больше никаких ::after с символом 🀄, который мог протыкать */
+.theme-preview-traditional {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 215, 130, 0.3), transparent 50%),
+    linear-gradient(135deg, #2a1810 0%, #5a2a1a 50%, #8a5a2a 100%);
+}
+.theme-preview-traditional::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 60%, rgba(212, 169, 85, 0.2) 100%),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.03) 10px, rgba(255, 255, 255, 0.03) 11px);
+}
+.theme-preview-jade {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(180, 220, 200, 0.5), transparent 50%),
+    linear-gradient(135deg, #a8d8c8 0%, #c8e8d8 50%, #e8d8e8 100%);
+}
+.theme-preview-porcelain {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(232, 200, 120, 0.3), transparent 50%),
+    linear-gradient(135deg, #0a1a2a 0%, #2a5a8a 50%, #f0e8d0 100%);
+}
+/* v9: ночная тема — чёрный лак с золотой нитью и киноварной подложкой */
+.theme-preview-night {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(212, 169, 85, 0.32), transparent 50%),
+    linear-gradient(135deg, #0c0a09 0%, #1c1710 55%, #3a2218 100%);
+}
+.theme-preview-night::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(200, 32, 42, 0.28) 100%),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(212, 169, 85, 0.05) 10px, rgba(212, 169, 85, 0.05) 11px);
+}
+
+/* v10: императорская тема — багровый лак с обильным золотом */
+.theme-preview-imperial {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(232, 190, 110, 0.38), transparent 50%),
+    linear-gradient(135deg, #200808 0%, #4a1612 55%, #8a3a20 100%);
+}
+.theme-preview-imperial::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(232, 190, 110, 0.3) 100%),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(232, 190, 110, 0.06) 10px, rgba(232, 190, 110, 0.06) 11px);
+}
+
+
+/* ---------- v34: быстрые пресеты и подпись блока ---------- */
+.opt-card { font: inherit; color: inherit; text-align: left; }
+.opt-picker { margin-top: 10px; }
+.setting-block + .setting-block, .setting-block + .setting-row, .setting-row + .setting-block { margin-top: 18px; }
+.preset-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.preset-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  height: auto;
+  padding: 14px 18px;
+  text-align: left;
+}
+.preset-name { font-size: 18px; font-weight: 700; }
+.preset-desc { font-size: 13px; opacity: 0.8; font-weight: 400; line-height: 1.35; }

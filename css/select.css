@@ -1,0 +1,198 @@
+/* ============================================================
+   ГАЛЕРЕЯ РАСКЛАДОК
+   ============================================================ */
+.layouts-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+  align-content: start;
+}
+.layout-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: inherit;
+  color: var(--text-main);
+  position: relative;
+  overflow: hidden;
+  /* v8: каскадное появление карточек (--i ставит App.renderLayoutsGrid).
+     fill-mode backwards — чтобы после анимации hover-transform работал */
+  animation: card-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.layout-card:hover {
+  border-color: var(--accent-gold);
+  background: var(--card-bg-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px var(--shadow-medium), 0 0 0 1px var(--accent-gold-soft);
+}
+.layout-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-gold-soft), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.layout-card:hover::before { opacity: 1; }
+
+.layout-preview {
+  height: 130px;
+  background: var(--preview-bg);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 8px var(--shadow-soft);
+}
+.preview-tile {
+  position: absolute;
+  background: var(--preview-tile);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px var(--shadow-strong);
+}
+.layout-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.layout-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.layout-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.layout-meta {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+/* v9: золотой бейдж «✓ N» — сколько раз раскладка собрана.
+   Живёт в правом верхнем углу превью (превью — relative+hidden). */
+.layout-wins {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(14, 10, 6, 0.72);
+  border: 1px solid var(--accent-gold-soft);
+  color: var(--accent-gold-bright);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  line-height: 1.4;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ============================================================
+   СЛОЖНОСТЬ
+   ============================================================ */
+.difficulty-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: inherit;
+  color: var(--text-main);
+  /* v8: каскад появления карточек сложности (--i в разметке) */
+  animation: card-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms + 0.05s);
+}
+.card:hover {
+  border-color: var(--accent-gold);
+  background: var(--card-bg-hover);
+  transform: translateX(6px);
+  box-shadow: 0 8px 20px var(--shadow-medium);
+}
+.difficulty-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.card-icon {
+  font-size: 36px;
+  width: 48px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.card-body { flex: 1; }
+.card-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.card-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+
+/* ---------- v34: размер фишки на ЭТОМ экране — прямо на карточке раскладки ---------- */
+.layout-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.layout-size::before {
+  content: '';
+  width: 10px;
+  height: 14px;
+  border-radius: 3px;
+  background: currentColor;
+  opacity: 0.9;
+}
+.layout-size.size-l { color: #5fb36a; }
+.layout-size.size-m { color: var(--accent-gold); }
+.layout-size.size-s { color: #d9674a; }
+.screen-header .layouts-sort {
+  margin-left: auto;
+  height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+.screen-header .layouts-sort[aria-pressed="true"] {
+  background: var(--accent-gold);
+  color: #2a1608;
+  border-color: var(--accent-gold-dark);
+}

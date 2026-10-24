@@ -1,0 +1,24 @@
+/* ============================================================
+   v32: SVG-ИКОНКИ (js/icons.js) — вместо эмодзи и символов шрифта
+   Цвет берётся из currentColor, поэтому иконки сами меняют цвет
+   вместе с темой, а на Windows 7 больше нет пустых квадратов.
+   ============================================================ */
+.ico { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+.ico-svg { display: inline-block; vertical-align: -0.14em; overflow: visible; flex-shrink: 0; }
+.ico-svg .s { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ico-svg .f { fill: currentColor; fill-opacity: 0.2; stroke: none; }
+.ico-svg .k { fill: currentColor; stroke: none; }
+/* Крупные (48×48) иконки рисуем чуть тоньше — смотрятся изящнее */
+.card-icon .ico-svg .s { stroke-width: 1.9; }
+.card-icon { color: var(--accent-gold); display: flex; align-items: center; justify-content: center; }
+/* Иконка внутри текста кнопки: небольшой зазор от слова */
+.btn .ico-svg, .tutorial-skip .ico-svg, .tut-chip .ico-svg, .tut-verdict .ico-svg { margin: 0 0.15em; }
+.btn-icon-only .ico-svg { width: 1.35em; height: 1.35em; }
+.win-ach-icon .ico-svg, .tutorial-slide-icon .ico-svg { vertical-align: middle; }
+.tutorial-slide-icon { color: var(--accent-gold); }
+.tutorial-slide-icon .ico-svg { width: 1em; height: 1em; }
+.tut-badge .ico-svg { width: 0.9em; height: 0.9em; }
+.tut-badge .ico-svg .s { stroke-width: 2.6; }
+.card-icon { width: 60px; }
+.setting-group .setting-desc + .mix-picker { margin-top: 14px; }
+.win-ach-icon .ico-svg { width: 1.3em; height: 1.3em; }

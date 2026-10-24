@@ -1,0 +1,219 @@
+/* ============================================================
+   PREVIEW.CSS — Живое превью настроек (v38)
+
+   Экран настроек стал полноценным широким экраном: слева колонка
+   групп, справа — «экранчик», мини-стол с настоящими фишками.
+   Фишки в превью — те же .tile, что и в игре (js/app/preview.js
+   ставит им классы free / selected / match-cand / hint-* и
+   переменные --tile-*), поэтому подсветка, рамки, выбранная
+   фишка и подсказка выглядят ровно как в партии — и меняются
+   сразу при клике по настройке.
+
+   Файл подключён ПОСЛЕ tiles.css и highlight.css: стили фишек
+   переиспользуются, а не дублируются, и каскад не спорит.
+   ============================================================ */
+
+/* ---------- Широкий экран настроек ---------- */
+.settings-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;               /* скроллится всё тело, превью «прилипает» */
+  display: grid;
+  grid-template-columns: minmax(0, 780px) minmax(370px, 460px);
+  justify-content: center;
+  width: 100%;
+}
+/* Колонка групп: больше не узкий прямоугольник по центру —
+   плотная колонка на всю высоту, читается как нормальный экран */
+.settings-body .settings-list {
+  flex: none;
+  overflow: visible;
+  max-width: none;
+  margin: 0;
+  width: auto;
+  padding: 24px 30px 48px 24px;
+}
+
+/* ---------- Панель превью («экранчик») ---------- */
+.settings-preview {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  padding: 24px 10px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.preview-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin: 0;
+}
+.preview-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* Корпус «монитора»: тёмный скос, как рама ночного стола */
+.preview-frame {
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(165deg, #33333a 0%, #1c1c22 55%, #101014 100%);
+  box-shadow:
+    0 18px 40px var(--shadow-strong),
+    0 2px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(0, 0, 0, 0.65);
+}
+.preview-screen {
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.8);
+  /* лёгкий блик стекла, как на экране под лампой */
+}
+.preview-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(128deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 28%, transparent 46%);
+  z-index: 5;
+}
+
+/* Сукно — те же ткани и свет, что у игрового стола (тема меняет всё) */
+.preview-felt {
+  position: relative;
+  border-radius: 8px;
+  background:
+    var(--weave-cloth),
+    var(--noise-cloth),
+    var(--mat-bg);
+  box-shadow:
+    inset 0 5px 18px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px var(--mat-edge);
+  padding: 8px;
+}
+/* золотая вставка по периметру — как .table-mat::before в игре */
+.preview-felt::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--inlay);
+  border-radius: 6px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ---------- Мини-доска: сцена из семи фишек ----------
+   Размеры фишек и «бок» — переменными, как у настоящей доски:
+   их читают и tiles.css (грани, тени), и highlight.css (толщина
+   рамок: max(3px, --tile-w × 0.06)). */
+.preview-board {
+  --tile-w: 46px;
+  --tile-h: 64px;
+  --tile-depth: 4px;
+  --tile-radius: 7px;
+  --tile-face-pad: 4px;
+  --tile-blocked-alpha: 1;   /* прозрачность закрытых (слайдер) */
+  position: relative;
+  width: 312px;
+  height: 244px;
+  margin: 0 auto;
+}
+/* Превью не интерактивно: фишки не кликаются и не ловят hover —
+   их состояния задаёт только синхронизация с настройками */
+.preview-board .tile {
+  cursor: default;
+  pointer-events: none;
+}
+/* «Обычная» подсказка в игре — три мягкие вспышки и гаснет.
+   В превью она живёт постоянно, чтобы её было видно: та же
+   анимация hint-pulse, но бесконечная и спокойнее. */
+.preview-board .tile.hint {
+  animation: hint-pulse 1.5s ease-in-out infinite;
+}
+
+/* Подписи на сукне — тёмные таблички с золотой каймой; читаются
+   на любом сукне, светлых тоже. Ставит preview.js. */
+.preview-label {
+  position: absolute;
+  padding: 2px 7px 3px;
+  border-radius: 8px;
+  background: rgba(8, 5, 3, 0.58);
+  border: 1px solid var(--accent-gold-soft);
+  color: rgba(255, 244, 220, 0.88);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* ---------- Легенда под экранчиком ---------- */
+.preview-legend {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.preview-legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+.preview-legend-key {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.preview-legend-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-gold-bright);
+  text-align: right;
+}
+
+/* ---------- Адаптив ---------- */
+/* Узкий/вертикальный экран: колонки складываются, экранчик
+   поднимается наверх и не «прилипает» — настройки рядом */
+@media (max-width: 1180px) {
+  .settings-body { grid-template-columns: minmax(0, 1fr); }
+  .settings-body .settings-list { padding: 20px 20px 40px; }
+  .settings-preview {
+    position: static;
+    order: -1;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 20px 16px 0;
+  }
+}
+/* Телефон: экранчик ужимается (zoom уже используется игрой для
+   крупного интерфейса), легенда — компактнее */
+@media (max-width: 480px) {
+  .preview-frame { zoom: 0.86; }
+  .preview-note { font-size: 12px; }
+  .preview-legend-val { font-size: 12px; }
+}
+
+/* ---------- Лёгкий режим и «уменьшить анимацию» ----------
+   Бесконечные пульсации превью гаснут там же, где и игровые:
+   правила-«глушилки» лежат в common.css (reduced-motion) и
+   lite.css — превью живёт по тем же законам, что и стол. */
+@media (prefers-reduced-motion: reduce) {
+  .preview-board .tile.hint { animation: none; }
+}
+html[data-perf="lite"] .preview-board .tile.hint { animation: none; }
+html[data-perf="lite"] .preview-frame {
+  box-shadow: 0 10px 24px var(--shadow-strong), 0 0 0 1px rgba(0, 0, 0, 0.65);
+}

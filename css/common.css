@@ -1,0 +1,76 @@
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-screen);
+  color: var(--text-main);
+  padding: 14px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--accent-gold-soft);
+  box-shadow: 0 12px 32px var(--shadow-strong), 0 0 0 1px var(--accent-gold-soft);
+  font-size: 15px;
+  z-index: 2000;
+  animation: toast-in 0.3s ease;
+  max-width: 80vw;
+  backdrop-filter: blur(12px);
+}
+.toast[hidden] { display: none; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+/* v8: мягкий уход тоста (класс ставит App.toast перед скрытием) */
+.toast.toast-out {
+  animation: toast-out 0.28s ease forwards;
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to   { opacity: 0; transform: translate(-50%, 14px); }
+}
+
+/* ============================================================
+   ДОСТУПНОСТЬ: уменьшенная анимация (настройка ОС)
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   СКРОЛЛБАРЫ
+   ============================================================ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-gold); }
+
+/* ============================================================
+   АДАПТИВ
+   ============================================================ */
+@media (max-width: 700px) {
+  .btn { padding: 14px 18px; font-size: 16px; }
+  .btn-hint { display: none; }
+  .btn-arrow { display: none; }
+  .win-stats { gap: 24px; }
+  .win-stat strong { font-size: 26px; }
+  .theme-picker, .size-picker, .skin-picker { grid-template-columns: 1fr; }
+}
+
+/* v9/v33: узкие экраны — шапка игры вмещает 4 показателя и 4 кнопки
+   (правила для .game-header — в блоке «ИГРОВОЙ ЭКРАН») */
+@media (max-width: 480px) {
+  .game-header .btn-icon-only, .game-header .btn-action { width: 34px; height: 34px; }
+  .game-header .btn-icon-only { font-size: 20px; }
+  .info-value { font-size: 16px; }
+}
+

@@ -1,0 +1,126 @@
+/* ============================================================
+   v31: ЭКРАН «МИКС» — генератор раскладки
+   Слева — превью доски, справа — настройки. На узких экранах
+   превью сверху, настройки под ним (прокрутка всего экрана).
+   ============================================================ */
+.mix-body {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(280px, 5fr) minmax(320px, 6fr);
+  gap: clamp(16px, 3vw, 40px);
+  align-content: start;
+  align-items: start;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 32px);
+}
+.mix-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+}
+/* Превью — маленькая копия игрового стола: сукно, золотая вставка, слоновая кость */
+.mix-preview {
+  height: clamp(210px, 36vh, 340px);
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 30%, var(--mat-sheen), transparent 70%),
+    var(--mat-bg);
+  border: 1px solid var(--accent-gold-soft);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 5px var(--table-border),
+    inset 0 0 0 6px var(--accent-gold-soft),
+    inset 0 6px 18px rgba(0, 0, 0, 0.45),
+    0 10px 26px var(--shadow-medium);
+}
+.mix-preview .preview-tile {
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px var(--shadow-strong);
+}
+.mix-preview.is-fresh .preview-tile {
+  animation: mix-tile-in 0.32s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+@keyframes mix-tile-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.85); }
+  to   { opacity: 1; transform: none; }
+}
+.mix-title {
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  font-size: 26px;
+  color: var(--accent-gold);
+  line-height: 1.2;
+}
+.mix-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.mix-facts {
+  font-size: 15px;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+}
+.mix-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+.mix-actions .btn { flex: 1; }
+.mix-controls .setting-group:last-child { border-bottom: none; }
+.mix-controls .setting-block + .setting-block { margin-top: 18px; }
+/* Параметры «С нуля» гаснут, если выбран способ «Из двух раскладок» */
+#mix-scratch-opts { transition: opacity 0.25s ease; }
+#mix-scratch-opts.is-off {
+  opacity: 0.38;
+  pointer-events: none;
+}
+.mix-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+.mix-card {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 14px;
+  padding: 12px 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  font-family: inherit;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.mix-card:hover { border-color: var(--accent-gold); transform: translateY(-2px); }
+.mix-card.active {
+  border-color: var(--accent-gold);
+  background: var(--card-bg-active);
+  box-shadow: 0 0 0 1px var(--accent-gold-soft);
+}
+.mix-card:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 2px; }
+.mix-card-name { font-size: 15px; font-weight: 600; }
+.mix-card-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+/* Слои в превью: нижние темнее, верхние ярче — видно «башню» */
+.mix-preview .preview-tile[data-z="0"] { filter: brightness(0.74); }
+.mix-preview .preview-tile[data-z="1"] { filter: brightness(0.86); }
+.mix-preview .preview-tile[data-z="2"] { filter: brightness(0.95); }
+.mix-preview .preview-tile { border-bottom-width: 2px; }
+
+@media (max-width: 760px) {
+  .mix-body { grid-template-columns: 1fr; }
+  .mix-stage { position: static; }
+  .mix-picker { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mix-preview.is-fresh .preview-tile { animation: none; }
+}
+

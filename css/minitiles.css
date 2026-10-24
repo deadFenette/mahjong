@@ -1,0 +1,247 @@
+/* ============================================================
+   МИНИ-ФИШКИ И СХЕМЫ
+   ============================================================ */
+
+/* Сцена — пунктирная рамка, как «витрина» шага */
+.tut-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 1px dashed var(--border-soft);
+  border-radius: 14px;
+}
+
+.tut-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+/* ---------- Мини-фишка ---------- */
+.tut-tile {
+  position: relative;
+  width: 46px;
+  height: 60px;
+  border-radius: 8px;
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  box-shadow:
+    0 4px 0 var(--tile-shadow),
+    0 9px 14px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tut-tile span:not(.tut-badge) {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* Цвета глифов — как масти настоящих фишек */
+.tut-g-red   { color: #b83232; }
+.tut-g-green { color: #2a7a44; }
+.tut-g-blue  { color: #3a6a9a; }
+
+/* Закрытая — приглушённая (та же идея, что у .tile:not(.free)) */
+.tut-tile.dim {
+  filter: saturate(0.55) brightness(0.82);
+  opacity: 0.72;
+}
+/* Свободная — золотое свечение (как подсветка доступных) */
+.tut-tile.glow {
+  border-color: var(--accent-gold);
+  box-shadow:
+    0 4px 0 var(--tile-shadow),
+    0 0 16px var(--accent-gold-glow),
+    0 9px 14px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- Значки ✓/✗ на фишках ---------- */
+.tut-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Noto Sans SC', sans-serif;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.tut-badge.ok { background: #2a8a4a; }
+.tut-badge.no { background: #b83232; }
+
+.tut-verdict {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.tut-verdict.ok { color: #4aa86a; }
+.tut-verdict.no { color: #d05a5a; }
+
+/* ---------- Шаг 1: пирамида ---------- */
+.tut-pyramid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tut-pyramid > .tut-tile {
+  margin-bottom: -20px; /* верхняя фишка лежит слоем выше */
+  z-index: 2;
+}
+
+/* ---------- Шаг 2: пара ---------- */
+.tut-pair {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.tut-spark {
+  font-size: 26px;
+  color: var(--accent-gold-bright);
+  animation: tut-spark-pulse 1.2s ease-in-out infinite;
+}
+@keyframes tut-spark-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50%      { transform: scale(1.25); opacity: 1; }
+}
+
+/* ---------- Шаг 3: примеры можно/нельзя ---------- */
+.tut-examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+/* Накрытая фишка: верхняя лежит поверх, смещена вправо-вверх */
+.tut-covered { position: relative; }
+.tut-cover-top {
+  position: absolute;
+  left: 16px;
+  top: -22px;
+  z-index: 2;
+}
+.tut-covered > .tut-tile:first-child { margin-top: 12px; }
+
+/* ---------- Шаг 4: слои + легенда ---------- */
+.tut-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tut-stack-top {
+  margin-bottom: -22px; /* лежит на ряду ниже — виден «бок» */
+  z-index: 2;
+}
+.tut-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.tut-chip {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.tut-chip.gold {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold-bright);
+  background: var(--accent-gold-soft);
+}
+
+/* ---------- Шаг 5: кнопки-помощники ---------- */
+.tut-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+}
+.tut-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.tut-btn-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--accent-gold-soft);
+  color: var(--accent-gold-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Шаг 6: чипы наград ---------- */
+.tut-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.tut-chips .tut-chip { font-size: 13px; padding: 6px 14px; }
+
+/* ---------- Адаптив ---------- */
+@media (max-width: 480px) {
+  .tutorial-card { padding: 16px 14px 16px; }
+  .tutorial-slide { min-height: 224px; }
+  .tutorial-slide h3 { font-size: 20px; }
+  .tutorial-slide p { font-size: 14px; }
+  .tut-tile { width: 38px; height: 50px; }
+  .tut-tile span:not(.tut-badge) { font-size: 21px; }
+  .tut-cover-top { left: 13px; top: -18px; }
+  .tutorial-nav .btn { min-width: 100px; }
+}
+
+/* ---------- Сборник музыки (v26-audio) ---------- */
+.music-picker {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  margin: 2px 0 12px;
+}
+.setting-select {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+}
+.setting-select:hover {
+  background: var(--btn-bg-hover);
+}
+.setting-select:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+.setting-select option {
+  color: #222;
+  background: #fff;
+}
+.music-picker .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+

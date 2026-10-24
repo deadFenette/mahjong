@@ -1,0 +1,128 @@
+/* ============================================================
+   HIGHLIGHT.CSS — Подсветка для глаз (v34)
+
+   Четыре независимых слоя заметности (настройки → «Подсветка и
+   подсказки»; значения лежат в атрибутах <body>, JS: app/options.js):
+
+   1. data-hl      — доступные (свободные) фишки: soft | bold | focus
+                     (soft — прежнее золотое свечение из tiles.css);
+   2. data-sel     — выбранная фишка: soft | bold;
+   3. .match-cand  — свободные «двойники» выбранной фишки;
+   4. .hint-*      — подсказка: bold | max (+ линия между фишками).
+
+   Толщина рамок считается от ширины фишки (--tile-w, её ставит
+   Render.fitBoard): на мелких фишках рамка тоньше, на крупных толще,
+   но не меньше 3 px — чтобы не пропадала на любом экране.
+   Файл подключается ПОСЛЕ tiles.css и перебивает его.
+   ============================================================ */
+
+/* ---------- 1. Доступные фишки ---------- */
+body[data-hl="bold"] .tile.free,
+body[data-hl="focus"] .tile.free {
+  outline: max(3px, calc(var(--tile-w, 56px) * 0.06)) solid var(--tile-hint-glow);
+  outline-offset: 1px;
+}
+/* «Фокус»: всё закрытое притемнено — глаз сразу цепляется за доступное */
+body[data-hl="focus"] .tile:not(.free):not(.selected) {
+  filter: saturate(0.4) brightness(0.6);
+}
+body[data-hl="focus"] .tile:not(.free):hover {
+  filter: saturate(0.7) brightness(0.8);
+}
+
+/* ---------- 2. Выбранная фишка ---------- */
+body[data-sel="bold"] .tile.selected {
+  transform: translateY(calc(var(--tile-sel-lift, 6px) * -1.5)) scale(1.08);
+  outline: max(3px, calc(var(--tile-w, 56px) * 0.07)) solid #fff;
+  outline-offset: max(3px, calc(var(--tile-w, 56px) * 0.05));
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 0.75) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.5) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 3) 10px var(--shadow-strong),
+    0 0 0 max(3px, calc(var(--tile-w, 56px) * 0.06)) var(--accent-gold),
+    0 0 0 max(6px, calc(var(--tile-w, 56px) * 0.12)) rgba(0, 0, 0, 0.55),
+    0 0 30px 6px var(--accent-gold-soft);
+}
+
+/* ---------- 3. Двойники выбранной фишки ---------- */
+.tile.match-cand {
+  outline: max(3px, calc(var(--tile-w, 56px) * 0.06)) dashed var(--accent-gold-bright);
+  outline-offset: 2px;
+  animation: cand-pulse 0.9s ease-in-out infinite;
+}
+@keyframes cand-pulse {
+  0%, 100% { outline-offset: 2px; filter: brightness(1); }
+  50%      { outline-offset: 5px; filter: brightness(1.14); }
+}
+
+/* ---------- 4. Подсказка: «заметная» и «очень заметная» ---------- */
+.tile.hint-bold,
+.tile.hint-max {
+  z-index: 9998 !important;
+  outline: max(4px, calc(var(--tile-w, 56px) * 0.08)) solid #fff;
+  outline-offset: 2px;
+  animation: hint-bold 0.8s ease-in-out infinite;
+}
+@keyframes hint-bold {
+  0%, 100% {
+    transform: translateY(-2px) scale(1);
+    box-shadow:
+      0 0 0 4px var(--tile-hint-glow),
+      0 0 16px 4px var(--tile-hint-glow-soft);
+  }
+  50% {
+    transform: translateY(-7px) scale(1.1);
+    box-shadow:
+      0 0 0 9px var(--tile-hint-glow),
+      0 0 44px 14px var(--tile-hint-glow-soft);
+  }
+}
+/* Бегущая пунктирная линия между двумя фишками подсказки */
+.hint-link {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 9990;
+}
+.hint-link-halo {
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-linecap: round;
+}
+.hint-link-line {
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-dasharray: 1 14;
+  animation: hint-dash 0.7s linear infinite;
+}
+@keyframes hint-dash { to { stroke-dashoffset: -15; } }
+
+/* ---------- Плавный «подъезд» при автомасштабе ---------- */
+.board.rezoom .tile {
+  transition:
+    left 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    opacity 0.25s ease,
+    filter 0.25s ease;
+}
+.board.rezoom { transition: width 0.55s ease, height 0.55s ease; }
+
+/* Уменьшенная анимация / лёгкий режим: без прыжков и «подъезда» */
+@media (prefers-reduced-motion: reduce) {
+  .tile.hint-bold, .tile.hint-max, .tile.match-cand { animation: none; }
+  .hint-link-line { animation: none; }
+  .board.rezoom .tile, .board.rezoom { transition: none; }
+}
+html[data-perf="lite"] .board.rezoom .tile,
+html[data-perf="lite"] .board.rezoom { transition: none; }
+html[data-perf="lite"] .tile.match-cand { animation: none; }

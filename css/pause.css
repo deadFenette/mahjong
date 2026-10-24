@@ -1,0 +1,110 @@
+/* ============================================================
+   OVERLAY (Пауза)
+   ============================================================ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fade-in 0.2s ease;
+}
+.overlay[hidden] {
+  display: none;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.overlay-card {
+  background: var(--bg-screen);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 300px;
+  box-shadow: 0 24px 60px var(--shadow-strong);
+  /* v8: карточка паузы выпрыгивает, а не просто проявляется */
+  animation: card-pop 0.32s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+@keyframes card-pop {
+  from { opacity: 0; transform: translateY(14px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.overlay-card h3 {
+  text-align: center;
+  font-size: 26px;
+  margin-bottom: 12px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* v20: Кастомный confirm overlay — узкая карточка с сообщением
+   и двумя кнопками (Отмена / Опасная-кнопка). */
+.confirm-card {
+  max-width: 420px;
+  min-width: 320px;
+  padding: 28px 32px 24px;
+}
+.confirm-title {
+  /* v20: иконка-предупреждение в заголовке (опционально через ::before) */
+  position: relative;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+.confirm-message {
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0 0 18px;
+  max-width: 360px;
+  align-self: center;
+}
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.confirm-actions .btn {
+  flex: 1;
+  min-width: 120px;
+}
+/* v9: сводка партии прямо в карточке паузы */
+.pause-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 10px 0 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.pause-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.pause-stat span {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.pause-stat strong {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+

@@ -1,0 +1,132 @@
+/* ============================================================
+   v32: ЛЁГКИЙ РЕЖИМ (подключается ПОСЛЕДНИМ — перебивает остальное)
+   Включается атрибутом <html data-perf="lite"> (js/perf.js):
+   автоматически на Windows 7 / старых браузерах / слабых ПК,
+   либо вручную в Настройках → Графика.
+
+   Что отключаем и почему (самое дорогое для слабой видеокарты):
+   1. backdrop-filter: blur — каждый блюр перерисовывает всё, что
+      под ним, на каждом кадре анимации;
+   2. filter: drop-shadow и бесконечные анимации (пыль, фонарики,
+      облака) — постоянная перерисовка меню;
+   3. по ~11 слоёв теней на каждой из 144 фишек, из них два
+      размытых — заменены на тени без размытия;
+   4. SVG-шум (feTurbulence) для дерева/сукна — на слабом ПК
+      растеризуется долго;
+   5. большие свечения (blur 14–28px) у свободной и выбранной фишки.
+   Игровая логика и читаемость не меняются: свободные фишки по-прежнему
+   подсвечены золотом, закрытые — приглушены.
+   ============================================================ */
+
+/* ---------- 1. Размытие фона ---------- */
+html[data-perf="lite"] .btn,
+html[data-perf="lite"] .screen-header,
+html[data-perf="lite"] .game-header,
+html[data-perf="lite"] .overlay,
+html[data-perf="lite"] .win-ach,
+html[data-perf="lite"] .toast,
+html[data-perf="lite"] .layout-wins {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* Без размытия подложка должна быть плотнее, иначе текст «плывёт» */
+html[data-perf="lite"] .overlay { background: rgba(8, 5, 3, 0.9); }
+html[data-perf="lite"] .toast { background: rgba(26, 17, 10, 0.96); }
+
+/* ---------- 2. Фильтры и бесконечные анимации ---------- */
+html[data-perf="lite"] .menu-dust { display: none; }
+html[data-perf="lite"] .dust-mote,
+html[data-perf="lite"] .menu-decor-cloud,
+html[data-perf="lite"] .menu-lantern,
+html[data-perf="lite"] .win-glow,
+html[data-perf="lite"] .tut-spark {
+  animation: none;
+}
+html[data-perf="lite"] .menu-seal,
+html[data-perf="lite"] .menu-seal-decor,
+html[data-perf="lite"] .menu-decor-cloud,
+html[data-perf="lite"] .menu-lantern,
+html[data-perf="lite"] .table-corner,
+html[data-perf="lite"] .dust-mote {
+  filter: none;
+}
+html[data-perf="lite"] .win-glow { opacity: 0.35; }
+
+/* ---------- 3. Фишки: тени без размытия, без фильтров ---------- */
+html[data-perf="lite"] .tile {
+  filter: none;
+  transition: transform 0.14s ease, opacity 0.2s ease;
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    0 var(--tile-depth, 4px) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.7) 0 var(--shadow-strong);
+}
+/* Закрытая фишка: вместо filter — тёмная вуаль на глянце (дёшево, тот же эффект) */
+html[data-perf="lite"] .tile:not(.free),
+html[data-perf="lite"] .tile:not(.free):hover { filter: none; }
+html[data-perf="lite"] .tile:not(.free)::after {
+  background: rgba(34, 22, 10, 0.18);
+  opacity: 1;
+}
+html[data-perf="lite"] .tile:not(.free):hover::after { opacity: 0.55; }
+/* Свободная: золотая рамка вместо размытого свечения */
+html[data-perf="lite"] .tile.free {
+  filter: none;
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    0 var(--tile-depth, 4px) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.7) 0 var(--shadow-strong),
+    0 0 0 2px var(--tile-free-glow);
+}
+html[data-perf="lite"] .tile.free:hover {
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.6) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 2.4) 0 var(--shadow-strong),
+    0 0 0 2px var(--tile-hover-glow);
+}
+/* Выбранная: без «дыхания» свечения — ровная золотая рамка */
+html[data-perf="lite"] .tile.selected {
+  animation: none;
+  filter: none;
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 2) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 3) 0 var(--shadow-strong),
+    0 0 0 3px var(--accent-gold);
+}
+
+/* ---------- 4. Стол: без SVG-шума и больших теней ---------- */
+html[data-perf="lite"] {
+  --grain-wood: none;
+  --grain-marble: none;
+  --noise-cloth: none;
+  --weave-cloth: none;
+}
+html[data-perf="lite"] .table-surface {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 0 0 2px var(--accent-gold-soft),
+    0 6px 0 rgba(0, 0, 0, 0.28);
+}
+html[data-perf="lite"] .table-mat { box-shadow: inset 0 0 0 1px var(--mat-edge); }
+html[data-perf="lite"] .table-mat::after { background: none; }
+html[data-perf="lite"] .game-header .btn-action,
+html[data-perf="lite"] .info-block,
+html[data-perf="lite"] .mix-preview {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- 5. Мелочи ---------- */
+html[data-perf="lite"] .layout-card::before { display: none; }
+html[data-perf="lite"] .preview-tile { filter: none; }
+html[data-perf="lite"] .mix-preview .preview-tile { filter: none; }
+html[data-perf="lite"] .mix-preview.is-fresh .preview-tile { animation: none; }

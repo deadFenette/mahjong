@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+/* ============================================================
+   TESTS/RUN.JS — Точка входа тестов маджонга
+   Запуск:  node tests/run.js
+   Ноль зависимостей: только Node.js.
+   Выход: код 0 — все тесты зелёные, 1 — есть падения.
+   ============================================================ */
+
+'use strict';
+
+require('./layouts.test.js');
+require('./tileset.test.js');
+require('./skins.test.js');
+require('./skins-v33.test.js');
+require('./structure.test.js');
+require('./options.test.js');
+require('./preview.test.js');
+require('./game.test.js');
+require('./render-math.test.js');
+require('./storage.test.js');
+require('./appearance.test.js');
+require('./animations.test.js');
+require('./improvements.test.js');
+require('./music.test.js');
+require('./audio.test.js');
+require('./audio-engine.test.js');
+require('./combo.test.js');
+require('./tutorial.test.js');
+require('./endgame.test.js');
+require('./deal.test.js');
+require('./menu.test.js');
+require('./daily.test.js');
+require('./mixgen.test.js');
+require('./lite.test.js');
+
+const { report } = require('./runner');
+const ok = report();
+process.exit(ok ? 0 : 1);
