@@ -36,6 +36,8 @@ require('./mixgen.test.js');
 require('./mixgen40.test.js');
 require('./mixgen45.test.js');
 require('./lite.test.js');
+require('./perf46.test.js');
+require('./perf47.test.js');
 
 const { report } = require('./runner');
 const ok = report();

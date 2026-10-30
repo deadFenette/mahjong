@@ -100,21 +100,94 @@ const Game = (function () {
 
   // Порядок «разборки» раскладки: список пар свободных позиций.
   // null — не вышло (в конце остался завал, где свободна одна позиция).
+  // v47-perf: было O(N³) — на каждый шаг «разборки» spotIsFree заново
+  // сканировала весь rest для КАЖДОЙ позиции. Теперь свобода хранится
+  // инкрементально (снимаем пару → пересчитываем только её соседей),
+  // а сами проверки ходят по z-бакетам (слоёв ≤ 5). Итого O(N² + N·k·слой)
+  // вместо O(N³): на Миксе-600 newGame с ~1,7 с падает до десятков мс.
+  // ПОВЕДЕНИЕ НЕ ИЗМЕНИЛОСЬ: порядок списка свободных, сама семантика
+  // spotIsFree и ПОСЛЕДОВАТЕЛЬНОСТЬ вызовов rng — бит-в-бит прежние,
+  // что железно проверяют golden-тесты tests/perf47.test.js.
   function buildRemovalOrder(positions, rng) {
+    const n = positions.length;
+    if (n === 0) return [];
     for (let attempt = 0; attempt < 40; attempt++) {
-      let rest = positions.map(p => ({ x: p.x, y: p.y, z: p.z }));
+      const alive = new Array(n).fill(true);
+      const freeFlag = new Array(n).fill(false);
+      const buckets = new Map();
+      const bucketAdd = i => {
+        const z = positions[i].z;
+        let b = buckets.get(z);
+        if (!b) { b = []; buckets.set(z, b); }
+        b.push(i);
+      };
+      const bucketRemove = i => {
+        const b = buckets.get(positions[i].z);
+        if (b) { const k = b.indexOf(i); if (k !== -1) b.splice(k, 1); }
+      };
+      // Точная копия предиката spotIsFree (см. ниже) по индексам и бакетам
+      const spotIsFreeIdx = i => {
+        const p = positions[i];
+        const up = buckets.get(p.z + 1);
+        if (up) {
+          for (let u = 0; u < up.length; u++) {
+            const o = positions[up[u]];
+            if (Math.abs(o.x - p.x) < 0.75 && Math.abs(o.y - p.y) < 0.75) return false;
+          }
+        }
+        const same = buckets.get(p.z);
+        let left = false, right = false;
+        if (same) {
+          for (let u = 0; u < same.length; u++) {
+            const oi = same[u];
+            if (oi === i) continue;
+            const o = positions[oi];
+            if (Math.abs(o.y - p.y) > 0.75) continue;
+            const dx = o.x - p.x;
+            if (dx < -0.25 && dx > -1.75) left = true;
+            else if (dx > 0.25 && dx < 1.75) right = true;
+            if (left && right) return false;
+          }
+        }
+        return !(left && right);
+      };
+      for (let i = 0; i < n; i++) bucketAdd(i);
+      for (let i = 0; i < n; i++) freeFlag[i] = spotIsFreeIdx(i);
+
       const order = [];
       let ok = true;
-      while (rest.length > 0) {
-        const free = rest.filter(p => spotIsFree(rest, p));
-        if (free.length < 2) { ok = false; break; }
-        const i = Math.floor(rng() * free.length);
-        let j = Math.floor(rng() * (free.length - 1));
+      let aliveCount = n;
+      while (aliveCount > 0) {
+        // Тот же порядок, что у rest.filter(...) в старой версии:
+        // позиции в исходном порядке массива, минус убранные
+        const freeIdx = [];
+        for (let i = 0; i < n; i++) if (alive[i] && freeFlag[i]) freeIdx.push(i);
+        if (freeIdx.length < 2) { ok = false; break; }
+        const i = Math.floor(rng() * freeIdx.length);
+        let j = Math.floor(rng() * (freeIdx.length - 1));
         if (j >= i) j += 1;
-        const a = free[i];
-        const b = free[j];
-        order.push([a, b]);
-        rest = rest.filter(p => p !== a && p !== b);
+        const ia = freeIdx[i], ib = freeIdx[j];
+        order.push([positions[ia], positions[ib]]);
+        alive[ia] = false; alive[ib] = false;
+        bucketRemove(ia); bucketRemove(ib);
+        aliveCount -= 2;
+        // Свобода могла измениться только у соседей убранных позиций:
+        // те, кого они накрывали (слой на 1 ниже, окно 0.75), и те,
+        // кому они были левым/правым блокером (тот же слой, окно 1.75)
+        const pa = positions[ia], pb = positions[ib];
+        for (let m = 0; m < n; m++) {
+          if (!alive[m] || freeFlag[m]) continue; // уже свободна/убрана — не пересчитываем
+          const p = positions[m];
+          let affected = false;
+          for (let s = 0; s < 2 && !affected; s++) {
+            const q = s === 0 ? pa : pb;
+            if (q.z === p.z + 1 &&
+                Math.abs(q.x - p.x) < 0.75 && Math.abs(q.y - p.y) < 0.75) affected = true;
+            else if (q.z === p.z && Math.abs(q.y - p.y) < 0.75 &&
+                     Math.abs(q.x - p.x) < 1.75) affected = true;
+          }
+          if (affected) freeFlag[m] = spotIsFreeIdx(m);
+        }
       }
       if (ok) return order;
     }
@@ -122,16 +195,49 @@ const Game = (function () {
   }
 
   // Сколько ходов одновременно доступно в расстановке (для выбора
-  // «живой» раздачи, а не такой, где ход ровно один)
+  // «живой» раздачи, а не такой, где ход ровно один).
+  // v47-perf: бакеты по z внутри вызова — было O(N²) на каждый try
+  // (spotIsFree сканировала все items для каждой позиции), стало
+  // O(N·слой). Результат совпадает бит-в-бит.
   function movesInPlacements(placements) {
     const items = [];
     placements.forEach(pl => {
       items.push({ x: pl.pa.x, y: pl.pa.y, z: pl.pa.z, k: matchKeyOf(pl.a) });
       items.push({ x: pl.pb.x, y: pl.pb.y, z: pl.pb.z, k: matchKeyOf(pl.b) });
     });
+    const buckets = new Map();
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      let b = buckets.get(it.z);
+      if (!b) { b = []; buckets.set(it.z, b); }
+      b.push(it);
+    }
+    const spotIsFreeItem = it => {
+      const up = buckets.get(it.z + 1);
+      if (up) {
+        for (let u = 0; u < up.length; u++) {
+          const o = up[u];
+          if (Math.abs(o.x - it.x) < 0.75 && Math.abs(o.y - it.y) < 0.75) return false;
+        }
+      }
+      const same = buckets.get(it.z);
+      let left = false, right = false;
+      if (same) {
+        for (let u = 0; u < same.length; u++) {
+          const o = same[u];
+          if (o === it) continue;
+          if (Math.abs(o.y - it.y) > 0.75) continue;
+          const dx = o.x - it.x;
+          if (dx < -0.25 && dx > -1.75) left = true;
+          else if (dx > 0.25 && dx < 1.75) right = true;
+          if (left && right) return false;
+        }
+      }
+      return !(left && right);
+    };
     const perKey = new Map();
     items.forEach(it => {
-      if (spotIsFree(items, it)) perKey.set(it.k, (perKey.get(it.k) || 0) + 1);
+      if (spotIsFreeItem(it)) perKey.set(it.k, (perKey.get(it.k) || 0) + 1);
     });
     let moves = 0;
     for (const c of perKey.values()) moves += Math.floor(c / 2);
@@ -193,6 +299,7 @@ const Game = (function () {
   // layout — раскладка из Layouts
   // seed — для воспроизводимости (если не задан — случайно)
   function newGame(layout, seed) {
+    invalidateFreeCache(); // v47-perf: новая доска
     const rng = makeRng(seed);
     const positions = layout.positions.slice(0, layout.positions.length - (layout.positions.length % 2));
     const count = positions.length;
@@ -300,18 +407,116 @@ const Game = (function () {
     return true;
   }
 
+  // ============================================================
+  //  СВОБОДНЫЕ ФИШКИ (v47-perf): КЕШ + z-БАКЕТЫ
+  //  isFree сканирует всю доску (O(N)), значит старый getFreeTiles
+  //  стоил O(N²) — и за ОДИН ход игрока он вызывался 3–4 раза
+  //  (highlightFree, hasAnyMove, countAvailableMoves, setSelected):
+  //  на гигантском Миксе (600 фишек) это ~40–50 мс чистой логики на
+  //  каждый матч. Теперь:
+  //  1) кеш с грязным флагом — свободность меняется только при
+  //     мутации доски (матч/отмена/перемешивание/новая партия),
+  //     поэтому пересчёт — ОДИН на ход, остальные вызовы берут массив
+  //     из кеша (массив только для ЧТЕНИЯ — не мутировать!);
+  //  2) z-бакеты — пересчёт сам спускается с O(N²) до O(N·слой):
+  //     «накрыта сверху» ищет только в слое z+1, соседи — в слое z.
+  //     Семантика isFree не изменилась (тот же предикат, бит-в-бит).
+  // ============================================================
+  let freeCache = null;       // массив свободных фишек (read-only для вызывающих)
+  let freeCacheState = null;  // объект state, для которого собран кеш
+  let freeCacheTiles = null;  // массив state.tiles (сейв подменяет массив целиком)
+  let freeCacheRemoved = -1;  // число снятых фишек в момент сборки (страховка)
+
+  function invalidateFreeCache() {
+    freeCache = null;
+    freeCacheState = null;
+    freeCacheTiles = null;
+    freeCacheRemoved = -1;
+  }
+
+  // Map z → фишки этого слоя (только не-removed). Слоёв ≤ 5, так что
+  // сканирование бакета на порядки дешевле сканирования всей доски.
+  function buildZBuckets() {
+    const buckets = new Map();
+    const tiles = state.tiles;
+    for (let i = 0; i < tiles.length; i++) {
+      const t = tiles[i];
+      if (t.removed) continue;
+      let b = buckets.get(t.z);
+      if (!b) { b = []; buckets.set(t.z, b); }
+      b.push(t);
+    }
+    return buckets;
+  }
+
+  // Тот же предикат, что isFree(inst), но по бакетам.
+  // isFree не пропускает саму фишку: dx=0 и dy=0 не влияют ни на left,
+  // ни на right — пропуск безопасен и здесь (результат совпадает).
+  function isFreeInBuckets(inst, buckets) {
+    const { x, y, z } = inst;
+    const up = buckets.get(z + 1);
+    if (up) {
+      for (let i = 0; i < up.length; i++) {
+        const t = up[i];
+        if (Math.abs(t.x - x) < 0.75 && Math.abs(t.y - y) < 0.75) return false;
+      }
+    }
+    const same = buckets.get(z);
+    let leftBlocked = false;
+    let rightBlocked = false;
+    if (same) {
+      for (let i = 0; i < same.length; i++) {
+        const t = same[i];
+        if (t === inst) continue;
+        if (Math.abs(t.y - y) > 0.75) continue;
+        const dx = t.x - x;
+        if (dx < -0.25 && dx > -1.75) leftBlocked = true;
+        else if (dx > 0.25 && dx < 1.75) rightBlocked = true;
+        if (leftBlocked && rightBlocked) return false;
+      }
+    }
+    return true;
+  }
+
   // ---------- Найти все свободные фишки ----------
+  // Возвращает ЗАКЕШИРОВАННЫЙ массив (валиден до следующей мутации
+  // доски). Вызывающим нельзя его мутировать — по коду так и есть:
+  // всюду только forEach/find/фильтрация в новый массив.
   function getFreeTiles() {
-    return state.tiles.filter(t => !t.removed && isFree(t));
+    const tiles = state.tiles;
+    // Страховка от пропущенной инвалидации: сравниваем ссылки state и
+    // массива tiles + число снятых фишек (O(N), но без pair-логики).
+    let removedCount = 0;
+    for (let i = 0; i < tiles.length; i++) if (tiles[i].removed) removedCount++;
+    if (freeCache && freeCacheState === state && freeCacheTiles === tiles &&
+        freeCacheRemoved === removedCount) return freeCache;
+    const buckets = buildZBuckets();
+    const out = [];
+    for (let i = 0; i < tiles.length; i++) {
+      const t = tiles[i];
+      if (!t.removed && isFreeInBuckets(t, buckets)) out.push(t);
+    }
+    freeCache = out;
+    freeCacheState = state;
+    freeCacheTiles = tiles;
+    freeCacheRemoved = removedCount;
+    return out;
   }
 
   // ---------- Есть ли хотя бы одна пара? ----------
+  // v47-perf: было O(free²) — свободных фишек на гиганте до 200, это
+  // до 20 000 сравнений после каждого матча. Группировка по matchKeyOf
+  // — ровно тот же инвариант, на котором уже работает
+  // countAvailableMoves (matchKeyOf ⟷ Tileset.isMatch: цветы/сезоны —
+  // любые, остальное — масть+ранг): ход существует ⟺ какой-то ключ
+  // встречается среди свободных дважды. O(free²) → O(free).
   function hasAnyMove() {
     const free = getFreeTiles();
+    const seen = new Map();
     for (let i = 0; i < free.length; i++) {
-      for (let j = i + 1; j < free.length; j++) {
-        if (Tileset.isMatch(free[i], free[j])) return true;
-      }
+      const k = matchKeyOf(free[i]);
+      if (seen.has(k)) return true;
+      seen.set(k, 1);
     }
     return false;
   }
@@ -389,6 +594,7 @@ const Game = (function () {
       const second = inst;
       first.removed = true;
       second.removed = true;
+      invalidateFreeCache(); // v47-perf: доска изменилась
       // v11: серия подряд наращивает множитель и бонус очков
       const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
       const mult = comboMultiplierFor(state.lastMatchAt, now, state.combo);
@@ -427,6 +633,7 @@ const Game = (function () {
     const last = state.history.pop();
     last.tile1.removed = false;
     last.tile2.removed = false;
+    invalidateFreeCache(); // v47-perf: доска изменилась
     state.score = Math.max(0, state.score - last.scoreDelta);
     state.pairsFound = Math.max(0, state.pairsFound - 1);
     state.selected = null;
@@ -487,6 +694,7 @@ const Game = (function () {
       state.board[key(a.x, a.y, a.z)] = a;
       state.board[key(b.x, b.y, b.z)] = b;
     });
+    invalidateFreeCache(); // v47-perf: позиции фишек изменились
     state.solution = deal.placements.map(p => [p.a, p.b]);
     return hasAnyMove();
   }
@@ -552,11 +760,13 @@ const Game = (function () {
       t.x = p.x; t.y = p.y; t.z = p.z;
       state.board[key(p.x, p.y, p.z)] = t;
     });
+    invalidateFreeCache(); // v47-perf: позиции фишек изменились
   }
 
   function rebuildBoardKeys(remaining) {
     remaining.forEach(t => { delete state.board[key(t.x, t.y, t.z)]; });
     remaining.forEach(t => { state.board[key(t.x, t.y, t.z)] = t; });
+    invalidateFreeCache(); // v47-perf: позиции фишек изменились
   }
 
   // Первая найденная пара совпадающих фишек среди remaining
@@ -614,6 +824,7 @@ const Game = (function () {
       o !== tile && o.x === spot.x && o.y === spot.y && o.z === spot.z);
     const old = { x: tile.x, y: tile.y, z: tile.z };
     tile.x = spot.x; tile.y = spot.y; tile.z = spot.z;
+    invalidateFreeCache(); // v47-perf: позиции фишек изменились
     if (occupant) {
       occupant.x = old.x; occupant.y = old.y; occupant.z = old.z;
     }
@@ -632,6 +843,7 @@ const Game = (function () {
     dst.rank = src.rank;
     dst.name = src.name;
     dst.face = src.face;
+    invalidateFreeCache(); // v47-perf: гигиена (свободность не меняется, но ключи совпадения — да)
   }
 
   // ============================================================
@@ -836,6 +1048,9 @@ const Game = (function () {
     // оптимизация сейва (v21-saveopt): восстановление face из Tileset
     restoreFace,
     restoreFaces,
+    // v47-perf: сейв подменяет state.tiles напрямую (saves.js) —
+    // после этого кеш свободных фишек надо сбросить явно
+    invalidateFreeCache,
     // Daily Mahjong (v21-daily): seed из даты + индекс раскладки
     dailySeedFromDate,
     dailyLayoutIndex,

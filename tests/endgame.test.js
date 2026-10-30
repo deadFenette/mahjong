@@ -276,15 +276,14 @@ suite('sw.js — кэш актуален (генератор миксов)', () 
 
   test('имя кэша обновлено', () => {
     const src = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-    assertOk(/mahjong-v45-mixbig/.test(src), 'ожидался кэш mahjong-v45-mixbig*');
+    assertOk(/mahjong-v47-perf/.test(src), 'ожидался кэш mahjong-v47-perf*');
   });
 
-  test('v20: шрифты локально в ASSETS (не с Google Fonts)', () => {
+  test('v47: шрифтов-бинарников НЕТ в ASSETS, загрузчик шрифтов есть', () => {
     const src = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-    assertOk(src.includes('./fonts/mashanzheng.ttf'), 'mashanzheng.ttf должен кэшироваться');
-    assertOk(src.includes('./fonts/notoserifsc-700.woff2'), 'notoserifsc-700 должен кэшироваться');
-    assertOk(src.includes('./fonts/zcoolxiaowei.woff2'), 'zcoolxiaowei должен кэшироваться');
-    assertOk(src.includes('./css/fonts.css'), 'css/fonts.css должен кэшироваться');
+    assertOk(!src.includes('./fonts/'), 'папка fonts/ не должна кэшироваться — её нет в репозитории');
+    assertOk(!src.includes('./css/fonts.css'), 'css/fonts.css больше не существует и не кэшируется');
+    assertOk(src.includes("'./js/fonts.js'"), 'js/fonts.js должен кэшироваться');
   });
 
   test('v20: фавиконки в ASSETS', () => {
@@ -293,11 +292,12 @@ suite('sw.js — кэш актуален (генератор миксов)', () 
     assertOk(src.includes('./icons/favicon-32.png'), 'favicon-32.png должен кэшироваться');
   });
 
-  test('v20: Google Fonts ссылки убраны из index.html', () => {
+  test('v47: index.html не ссылается ни на css/fonts.css, ни на Google Fonts', () => {
     const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    assertOk(!html.includes('fonts.googleapis.com'), 'ссылка на Google Fonts CSS должна быть убрана');
+    assertOk(!html.includes('css/fonts.css'), 'css/fonts.css больше не подключается (шрифты — через js/fonts.js)');
+    assertOk(!/<link[^>]+fonts\.googleapis/.test(html), 'ссылки на Google Fonts в head быть не должно');
     assertOk(!html.includes('fonts.gstatic.com'), 'preconnect к Google Fonts должен быть убран');
-    assertOk(html.includes('css/fonts.css'), 'css/fonts.css должен быть подключён');
+    assertOk(html.includes('js/fonts.js'), 'загрузчик шрифтов должен быть подключён');
   });
 
   test('волшебный матч полностью удалён из game.js', () => {

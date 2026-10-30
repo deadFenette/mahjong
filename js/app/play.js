@@ -126,7 +126,10 @@
 
     if (result === 'notfree') {
       // Лёгкое визуальное "покачивание"
-      const el = document.querySelector(`[data-tile-id="${tile.id}"]`);
+      // v47-perf: элемент из карты Render за O(1); querySelector оставлен
+      // как страховка на случай, если фишки нет на игровой доске
+      const el = Render.getTileEl(tile) ||
+        document.querySelector(`[data-tile-id="${tile.id}"]`);
       if (el) {
         el.classList.add('shake');
         setTimeout(() => el.classList.remove('shake'), 400);
@@ -193,7 +196,9 @@
       Audio2.mismatch();
       // v44: прежняя фишка «качает головой» (наклон, не сдвиг — её поза
       // подъёма не затрагивается), затем выбор переходит на новую
-      const prevEl = document.querySelector('#board .tile.selected');
+      // v47-perf: трекинг выбранного элемента уже велся в Render (v46) —
+      // берем его оттуда вместо querySelector по всей доске
+      const prevEl = Render.getSelectedEl();
       if (prevEl) {
         prevEl.classList.remove('reject');
         void prevEl.offsetWidth;
@@ -354,20 +359,13 @@
     if (!(opts && opts.holdScore)) A.setTextBumped(document.getElementById('game-score'), state.score);
     A.setTextBumped(document.getElementById('game-pairs'),
       `${state.pairsFound}/${state.totalPairs}`);
-    // Счётчик ходов: сколько пар ещё можно собрать прямо сейчас
-    A.setTextBumped(document.getElementById('game-moves'), countAvailableMoves());
-  }
-
-  // ---------- Сколько пар можно собрать прямо сейчас ----------
-  function countAvailableMoves() {
-    const free = Game.getFreeTiles();
-    let count = 0;
-    for (let i = 0; i < free.length; i++) {
-      for (let j = i + 1; j < free.length; j++) {
-        if (Tileset.isMatch(free[i], free[j])) count++;
-      }
-    }
-    return count;
+    // Счётчик ходов: сколько пар ещё можно собрать прямо сейчас.
+    // v46 (оптимизация): считаем через Game.countAvailableMoves —
+    // группировка по «ключу одинаковости» за O(free), вместо своего
+    // двойного цикла по всем парам свободных O(free²), который после
+    // КАЖДОГО матча на гигантских досках (до 600 фишек) добавлял
+    // лишние миллисекунды в самый горячий кадр.
+    A.setTextBumped(document.getElementById('game-moves'), Game.countAvailableMoves());
   }
 
   Object.assign(A, {

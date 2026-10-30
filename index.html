@@ -12,10 +12,10 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <!-- v20-offline: шрифты самохостятся локально (css/fonts.css).
-       Раньше тянулись онлайн с Google Fonts — в офлайне срабатывал
-       системный фолбэк, и тема визуально проседала. -->
-  <link rel="stylesheet" href="css/fonts.css" />
+  <!-- v20-offline → v47-perf: бинарники шрифтов убраны из репозитория
+       и архива. Модуль js/fonts.js подключает их по требованию:
+       папка fonts/ рядом с игрой ИЛИ кнопка-докачка в IndexedDB
+       (Google Fonts, только нужные игре символы) ИЛИ системный фолбэк. -->
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/buttons.css" />
   <link rel="stylesheet" href="css/select.css" />
@@ -203,6 +203,11 @@
           <span class="mt-hint">Темы, размер, звук</span>
         </button>
       </nav>
+
+      <!-- v47-perf: фирменные шрифты по кнопке (бинарники не хранятся в репо) -->
+      <div class="menu-fonts-wrap" aria-hidden="false">
+        <button type="button" id="btn-fonts" class="menu-fonts" hidden>Подключить фирменные шрифты</button>
+      </div>
 
       <div class="menu-stats">
         <div class="stat">
@@ -937,6 +942,12 @@
         </details>
       </div>
 
+      <div class="setting-group">
+        <h3 class="setting-title">Шрифты оформления</h3>
+        <p class="setting-desc" id="fonts-setting-status">Проверяем…</p>
+        <button class="btn btn-ghost" id="btn-fonts-settings" hidden>Подключить фирменные шрифты</button>
+      </div>
+
       <div class="setting-group danger">
         <h3 class="setting-title">Сброс</h3>
         <button class="btn btn-ghost" id="setting-reset-stats">Сбросить статистику</button>
@@ -1178,6 +1189,8 @@
   <script src="js/app/preview.js"></script>
   <script src="js/app/pause.js"></script>
   <script src="js/app/init.js"></script>
+  <!-- v47-perf: шрифты по требованию (см. js/fonts.js) -->
+  <script src="js/fonts.js"></script>
   <script src="js/sw-register.js"></script>
 </body>
 </html>

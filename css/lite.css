@@ -91,6 +91,9 @@ html[data-perf="lite"] .tile.free:hover {
     0 calc(var(--tile-depth, 4px) * 2.4) 0 var(--shadow-strong),
     0 0 0 2px var(--tile-hover-glow);
 }
+/* v46: рельеф рисунка (drop-shadow на самом SVG) тоже дорог —
+   на гигантской доске это до 600 фильтров при каждой перекраске */
+html[data-perf="lite"] .tile .tile-face-svg { filter: none; }
 /* Выбранная: без «дыхания» свечения — ровная золотая рамка */
 html[data-perf="lite"] .tile.selected {
   animation: none;

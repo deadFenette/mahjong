@@ -73,8 +73,8 @@ suite('v38: подключение — порядок каскада и кэш',
     assertOk(at('preview') < at('init'), 'preview до init: сцена строится раньше App.init');
   });
 
-  test('sw.js: кэш поднят до mahjong-v45-mixbig, новые файлы закэшированы', () => {
-    assertOk(/mahjong-v45-mixbig/.test(sw), 'кэш должен быть mahjong-v45-mixbig');
+  test('sw.js: кэш поднят до mahjong-v47-perf, новые файлы закэшированы', () => {
+    assertOk(/mahjong-v47-perf/.test(sw), 'кэш должен быть mahjong-v47-perf');
     assertOk(sw.includes("'./css/preview.css'"), 'css/preview.css не в кэше');
     assertOk(sw.includes("'./js/app/preview.js'"), 'js/app/preview.js не в кэше');
   });

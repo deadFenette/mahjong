@@ -66,6 +66,10 @@
       Game.restoreFaces(state.tiles);
       state.board = {};
       state.tiles.forEach(t => { state.board[Game.key(t.x, t.y, t.z)] = t; });
+      // v47-perf: доска подменена целиком — сбрасываем кеш свободных
+      // фишек, иначе первая проверка хода вернёт данные старой раздачи
+      // (страховка внутри Game.getFreeTiles ловит и это, но явный сброс честнее)
+      Game.invalidateFreeCache();
       state.score = saved.score || 0;
       state.pairsFound = saved.pairsFound || 0;
       state.totalPairs = saved.totalPairs || Math.floor(state.tiles.length / 2);

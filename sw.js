@@ -3,7 +3,7 @@
    Кэшируем все файлы при первой загрузке
    ============================================================ */
 
-const CACHE_NAME = 'mahjong-v45-mixbig';
+const CACHE_NAME = 'mahjong-v47-perf';
 const ASSETS = [
   './',
   './index.html',
@@ -28,18 +28,10 @@ const ASSETS = [
   './css/motion.css',
   './css/themes.css',
   './css/lite.css',
-  './css/fonts.css',
-  // v20-offline: самохостинг шрифтов (раньше тянулись с Google Fonts,
-  // в офлайне срабатывал системный фолбэк и тема проседала)
-  './fonts/mashanzheng.ttf',
-  './fonts/notoserifsc-400.woff2',
-  './fonts/notoserifsc-600.woff2',
-  './fonts/notoserifsc-700.woff2',
-  './fonts/notoserifsc-900.woff2',
-  './fonts/notosanssc-400.woff2',
-  './fonts/notosanssc-500.woff2',
-  './fonts/notosanssc-700.woff2',
-  './fonts/zcoolxiaowei.woff2',
+  // v47-perf: бинарники шрифтов убраны из кэша — их нет в репозитории.
+  // Шрифты подключает js/fonts.js по требованию (папка fonts/ или
+  // кнопка-докачка в IndexedDB). Сам модуль шрифтов — в кэше:
+  './js/fonts.js',
   './js/tileset-core.js',
   './js/tileset.js',
   // скины: новый файл js/skins/<id>.js добавляется сюда строкой (тест следит)

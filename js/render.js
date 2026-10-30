@@ -500,15 +500,34 @@ const Render = (function () {
   }
 
   // ---------- Рассчитать размер фишек под экран ----------
+  // Множитель интерфейса (--ui-k, app/options.js) — для оценки по окну
+  function uiScaleK() {
+    const v = Storage.getSetting('uiScale', 'normal');
+    return v === 'large' ? 1.2 : v === 'xlarge' ? 1.4 : 1;
+  }
+
   function fitBoard(layout) {
     // ресайз/смена раскладки посреди «подъезда»: старая анимация уже неверна
     if (zoomAnim) { zoomAnim.cancel(); zoomAnim = null; if (boardEl) boardEl.style.transformOrigin = ''; }
     if (!boardEl || !layout) return tileSize;
 
-    const { w: stageW, h: stageH } = stageContentSize();
+    let { w: stageW, h: stageH } = stageContentSize();
 
-    // Экран скрыт (display:none) → мерить нечего, оставляем старый размер.
-    // Реальную подгонку сделает reposition после показа экрана.
+    // Экран скрыт (display:none) → мерить нечего.
+    // v46 (оптимизация + фикс «прыжка размера»): раньше оставляли СТАРЫЙ
+    // размер фишек — новая партия (например, Микс на 24 фишки после
+    // гиганта на 600) рисовалась первый кадр «как бы издалека», и только
+    // reposition после показа экрана всё чинил. Теперь размер ОЦЕНИВАЕМ
+    // по окну (estimateStage — та же геометрия, что в галерее раскладок),
+    // и первый кадр уже правильный.
+    if (!(stageW > 0 && stageH > 0)) {
+      const est = estimateStage(window.innerWidth, window.innerHeight, {
+        uiScale: uiScaleK(),
+        loupe: Storage.getSetting('loupe', true) !== false,
+      });
+      stageW = est.stageW;
+      stageH = est.stageH;
+    }
     if (!(stageW > 0 && stageH > 0)) return tileSize;
 
     const setting = Storage.getSetting('tileSize', 'large');
@@ -572,6 +591,9 @@ const Render = (function () {
     boardEl.innerHTML = '';
     tileEls.clear();
     lastFreeSet = null;   // новая/пересобранная доска — «пробуждения» не нужны
+    // v46: ссылки на элементы умерли вместе с DOM — сбрасываем трекинг выбора
+    selectedEl = null;
+    candEls = [];
     // новая доска — лицом вверх, НО не если пауза открыта (пересборка во время
     // паузы, например смена скина, не должна открывать фишки за оверлеем)
     const pauseEl = typeof document !== 'undefined' ? document.getElementById('pause-overlay') : null;
@@ -664,8 +686,11 @@ const Render = (function () {
     });
     el.style.left = pos.left + 'px';
     el.style.top = pos.top + 'px';
-    el.style.width = tileSize.w + 'px';
-    el.style.height = tileSize.h + 'px';
+    // v46: размер пишем только если изменился — на reposition гигантской
+    // доски это убирает до 1200 лишних записей стиля (600 фишек × 2)
+    const wStyle = tileSize.w + 'px', hStyle = tileSize.h + 'px';
+    if (el.style.width !== wStyle) el.style.width = wStyle;
+    if (el.style.height !== hStyle) el.style.height = hStyle;
     el.style.zIndex = pos.zIndex;
     // v14: номер слоя → CSS красит каждый слой своим оттенком (tiles.css)
     el.dataset.layer = tile.z;
@@ -695,14 +720,21 @@ const Render = (function () {
     el.appendChild(halo);
   }
 
+  // v46 (оптимизация): вместо прохода по ВСЕМ фишкам на каждый клик
+  // (2×N проверок classList при 200–600 фишках) помним прошлый выбор
+  // и прошлых двойников — снимаем классы только с них. Ссылки сбрасываются
+  // в renderFull (DOM пересобран — старых элементов больше нет).
+  let selectedEl = null;   // элемент прошлой выбранной фишки
+  let candEls = [];        // элементы прошлых подсвеченных двойников
   function setSelected(tile) {
-    tileEls.forEach(el => {
-      if (el.classList.contains('selected')) el.classList.remove('selected');
-      if (el.classList.contains('match-cand')) el.classList.remove('match-cand');
-    });
+    if (selectedEl) selectedEl.classList.remove('selected', 'match-cand');
+    for (let i = 0; i < candEls.length; i++) candEls[i].classList.remove('match-cand');
+    candEls = [];
+    selectedEl = null;
     if (!tile) return;
     const el = tileEls.get(tile);
     if (el) {
+      selectedEl = el;
       ensureHalo(el);
       el.classList.add('selected');
     }
@@ -710,7 +742,7 @@ const Render = (function () {
       Game.getFreeTiles().forEach(t => {
         if (t !== tile && Tileset.isMatch(tile, t)) {
           const te = tileEls.get(t);
-          if (te) te.classList.add('match-cand');
+          if (te) { te.classList.add('match-cand'); candEls.push(te); }
         }
       });
     }
@@ -1298,6 +1330,20 @@ const Render = (function () {
     return t ? (elToTile.get(t) || null) : null;
   }
 
+  // v47-perf: элемент фишки по объекту фишки — O(1) по карте вместо
+  // document.querySelector по всему документу в клик-пути (play.js).
+  // Возвращает null, если фишки нет на доске (например, экран настроек).
+  function getTileEl(tile) {
+    return tile ? (tileEls.get(tile) || null) : null;
+  }
+
+  // v47-perf: элемент ТЕКУЩЕЙ выбранной фишки — заменяет
+  // querySelector('#board .tile.selected') в play.js; трекинг уже
+  // вёлся для v46-оптимизации setSelected, теперь им пользуется и клик-путь
+  function getSelectedEl() {
+    return selectedEl;
+  }
+
   // ---------- Получить текущий размер ----------
   function getTileSize() { return tileSize; }
   function getGap() { return gap; }
@@ -1370,5 +1416,8 @@ const Render = (function () {
     zIndexOf,
     sizeScaleFor,
     SIZE_SCALES,
+    // v47-perf: быстрый доступ к элементам фишек (клик-путь play.js)
+    getTileEl,
+    getSelectedEl,
   };
 })();

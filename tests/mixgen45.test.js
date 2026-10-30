@@ -129,9 +129,9 @@ suite('v45: галка «гигантские доски»', () => {
     assertOk(/\.mix-card\.is-off/.test(css));
   });
 
-  test('sw.js: кэш поднят до mahjong-v45-mixbig', () => {
+  test('sw.js: кэш поднят до mahjong-v47-perf', () => {
     const sw = read('sw.js');
-    assertOk(/mahjong-v45-mixbig/.test(sw), 'CACHE_NAME v45-mixbig');
+    assertOk(/mahjong-v47-perf/.test(sw), 'CACHE_NAME v46-perf');
   });
 
 });
