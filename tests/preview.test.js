@@ -73,8 +73,8 @@ suite('v38: подключение — порядок каскада и кэш',
     assertOk(at('preview') < at('init'), 'preview до init: сцена строится раньше App.init');
   });
 
-  test('sw.js: кэш поднят до mahjong-v38-preview, новые файлы закэшированы', () => {
-    assertOk(/mahjong-v38-preview/.test(sw), 'кэш должен быть mahjong-v38-preview');
+  test('sw.js: кэш поднят до mahjong-v45-mixbig, новые файлы закэшированы', () => {
+    assertOk(/mahjong-v45-mixbig/.test(sw), 'кэш должен быть mahjong-v45-mixbig');
     assertOk(sw.includes("'./css/preview.css'"), 'css/preview.css не в кэше');
     assertOk(sw.includes("'./js/app/preview.js'"), 'js/app/preview.js не в кэше');
   });
@@ -92,7 +92,7 @@ suite('v38: CSS — широкий экран и экранчик', () => {
   test('settings-body — две колонки, скролл переносится на тело', () => {
     assertOk(/\.settings-body \{[^}]*display: grid/.test(css), 'нет grid у settings-body');
     assertOk(/\.settings-body \{[^}]*overflow-y: auto/.test(css), 'скролл должен быть у тела');
-    assertOk(/grid-template-columns: minmax\(0, 780px\) minmax\(370px, 460px\)/.test(css),
+    assertOk(/grid-template-columns: minmax\(0, 780px\) minmax\(400px, 480px\)/.test(css),
       'две колонки: группы + превью');
     assertOk(/\.settings-preview \{[^}]*position: sticky/.test(css), 'превью должно прилипать при скролле');
   });
@@ -104,7 +104,7 @@ suite('v38: CSS — широкий экран и экранчик', () => {
   });
 
   test('мини-доска задаёт фишкам те же переменные, что игра', () => {
-    assertOk(/\.preview-board \{[^}]*--tile-w: 46px/.test(css), 'нет --tile-w');
+    assertOk(/\.preview-board \{[^}]*--tile-w: 50px/.test(css), 'нет --tile-w');
     assertOk(/\.preview-board \{[^}]*--tile-blocked-alpha: 1/.test(css), 'нет --tile-blocked-alpha');
     assertOk(/\.preview-board \{[^}]*--tile-face-pad/.test(css), 'нет --tile-face-pad');
     // сукно и ткани — как у игрового стола (тема меняет их целиком)
@@ -203,9 +203,42 @@ suite('v38: событие настроек рассылается из мест
     assertEq(n, 3, 'должно быть 3 рассылки: выбор, тумблер, пресет (есть: ' + n + ')');
   });
 
-  test('settings.js извещает о скине и прозрачности', () => {
+  test('skins.js и settings.js извещают о скине и прозрачности', () => {
     const settings = read('js/app/settings.js');
-    assertOk(settings.includes("A.notifySettings('tileSkin'"), 'нет рассылки о скине');
+    assertOk(read('js/app/skins.js').includes("A.notifySettings('tileSkin'"), 'нет рассылки о скине');
     assertOk(settings.includes("A.notifySettings('tileTransparency'"), 'нет рассылки о прозрачности');
+  });
+});
+
+suite('v39: доработка экранчика и подсветки «выкл»', () => {
+
+  test('highlight.css: при «выкл» все фишки плотные и не приглушены', () => {
+    const css = read('css/highlight.css');
+    assertOk(/body\[data-hl="off"\] \.tile:not\(\.free\)[^{]*\{[^}]*opacity: 1[^}]*filter: none/.test(css),
+      'нет правила, снимающего стиль «закрытых» при подсветке «выкл»');
+  });
+
+  test('сцена: подписи одного ряда не наезжают друг на друга', () => {
+    const src = read('js/app/preview.js');
+    const re = /label: \['([^']+)', (\d+), (\d+)\]/g;
+    const rows = {};
+    let m;
+    while ((m = re.exec(src))) {
+      (rows[m[3]] = rows[m[3]] || []).push({ text: m[1], cx: +m[2] });
+    }
+    Object.keys(rows).forEach(y => {
+      const r = rows[y].sort((a, b) => a.cx - b.cx);
+      for (let i = 1; i < r.length; i++) {
+        // подпись ≈ 6.2 px на букву + поля 16 px (шрифт 9px, uppercase)
+        const w = (t) => t.length * 6.2 + 16;
+        const gap = r[i].cx - r[i - 1].cx - (w(r[i].text) + w(r[i - 1].text)) / 2;
+        assertOk(gap >= 0, 'подписи «' + r[i - 1].text + '» и «' + r[i].text + '» наезжают');
+      }
+    });
+  });
+
+  test('легенда: при «выкл» не обещает стеклянных закрытых фишек', () => {
+    const src = read('js/app/preview.js');
+    assertOk(src.includes("hl === 'off' ? 'как доступные"), 'легенда не учитывает подсветку «выкл»');
   });
 });

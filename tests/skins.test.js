@@ -53,11 +53,8 @@ function loadWithSkin(skin) {
   const context = vm.createContext(sandbox);
   const files = [
     'js/tileset-core.js',
-    'js/tileset-classic.js',
-    'js/tileset-ornate.js',
-    'js/tileset-pictures.js',
-    'js/tileset-clear.js',
     'js/tileset.js',
+    ...require('./load').skinFiles(),
     'js/layouts.js',
     'js/music.js',
     'js/storage.js',
@@ -71,7 +68,7 @@ function loadWithSkin(skin) {
     source += `\n/* ==== ${f} ==== */\n`;
     source += fs2.readFileSync(path.join(ROOT, f), 'utf8');
   }
-  source += `\n;globalThis.__modules = { Tileset, TilesetClassic, TilesetOrnate, Storage };`;
+  source += `\n;globalThis.__modules = { Tileset, TilesetClassic: Tileset.get('classic'), TilesetOrnate: Tileset.get('ornate'), Storage };`;
   vm.runInContext(source, context, { filename: 'mahjong-skin-bundle.js' });
   return context.__modules;
 }
@@ -248,28 +245,26 @@ suite('Tileset фасад — переключение по localStorage', () =>
 
 suite('Скины — интеграция с index.html и app.js', () => {
 
-  test('index.html содержит переключатель .skin-card', () => {
+  test('index.html содержит контейнер #skin-picker (карточки строятся из реестра)', () => {
     const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    assertOk(html.includes('class="skin-card"'), 'должна быть кнопка .skin-card');
-    assertOk(html.includes('data-skin="classic"'), 'должен быть data-skin="classic"');
-    assertOk(html.includes('data-skin="ornate"'), 'должен быть data-skin="ornate"');
+    assertOk(html.includes('id="skin-picker"'), 'должен быть контейнер #skin-picker');
   });
 
-  test('index.html подключает tileset-classic.js и tileset-ornate.js ДО tileset.js', () => {
+  test('index.html подключает реестр tileset.js ДО файлов скинов js/skins/*.js', () => {
     const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    const iClassic = html.indexOf('js/tileset-classic.js');
-    const iOrnate = html.indexOf('js/tileset-ornate.js');
     const iFacade = html.indexOf('js/tileset.js');
+    const iClassic = html.indexOf('js/skins/classic.js');
+    const iOrnate = html.indexOf('js/skins/ornate.js');
     assertOk(iClassic > -1 && iOrnate > -1 && iFacade > -1);
-    assertOk(iClassic < iFacade, 'classic должен быть ДО facade');
-    assertOk(iOrnate < iFacade, 'ornate должен быть ДО facade');
+    assertOk(iFacade < iClassic, 'реестр должен быть ДО classic');
+    assertOk(iFacade < iOrnate, 'реестр должен быть ДО ornate');
   });
 
-  test('app.js содержит applyTileSkin() и skin-card listeners', () => {
-    const app = require('./sources').appSource();
-    assertOk(/function\s+applyTileSkin\s*\(/.test(app), 'applyTileSkin должна быть определена');
-    assertOk(/querySelectorAll\(['"]\.skin-card['"]\)/.test(app), 'app.js должен слушать .skin-card');
-    assertOk(/applyTileSkin\(/.test(app), 'applyTileSkin должна вызываться');
+  test('js/app/skins.js содержит applyTileSkin() и строит карточки из реестра', () => {
+    const sk = fs.readFileSync(path.join(ROOT, 'js/app/skins.js'), 'utf8');
+    assertOk(/function\s+applyTileSkin\s*\(/.test(sk), 'applyTileSkin должна быть определена');
+    assertOk(sk.includes('Tileset.SKINS.forEach'), 'карточки рисуются из Tileset.SKINS');
+    assertOk(/applyTileSkin\(/.test(sk));
   });
 
   test('storage.js содержит tileSkin в DEFAULT_SETTINGS', () => {
@@ -277,11 +272,9 @@ suite('Скины — интеграция с index.html и app.js', () => {
     assertOk(storage.includes("tileSkin: 'classic'"), 'tileSkin должен быть в DEFAULT_SETTINGS');
   });
 
-  test('sw.js кэширует tileset-classic.js и tileset-ornate.js', () => {
+  test('sw.js кэширует скины js/skins/classic.js и ornate.js', () => {
     const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-    assertOk(sw.includes('js/tileset-classic.js'), 'sw должен кэшировать tileset-classic.js');
-    assertOk(sw.includes('js/tileset-ornate.js'), 'sw должен кэшировать tileset-ornate.js');
-    // v38: кэш поднят до mahjong-v38-preview (широкие настройки + живое превью)
-    assertOk(/mahjong-v38-preview/.test(sw), 'кэш должен быть mahjong-v38-preview');
+    assertOk(sw.includes('js/skins/classic.js'), 'sw должен кэшировать skins/classic.js');
+    assertOk(sw.includes('js/skins/ornate.js'), 'sw должен кэшировать skins/ornate.js');
   });
 });

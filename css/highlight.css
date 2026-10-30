@@ -30,9 +30,23 @@ body[data-hl="focus"] .tile:not(.free):hover {
   filter: saturate(0.7) brightness(0.8);
 }
 
+/* «Выкл» (v39): класс .free не ставится никому, и без этой правки ВСЕ фишки
+   получали стиль «закрытых» — приглушение и стеклянность по слайдеру
+   прозрачности, то есть подсветка «выкл» сама выдавала, какие закрыты.
+   Теперь при «выкл» все фишки одинаково плотные и яркие. */
+body[data-hl="off"] .tile:not(.free),
+body[data-hl="off"] .tile:not(.free):hover {
+  opacity: 1;
+  filter: none;
+}
+
 /* ---------- 2. Выбранная фишка ---------- */
-body[data-sel="bold"] .tile.selected {
-  transform: translateY(calc(var(--tile-sel-lift, 6px) * -1.5)) scale(1.08);
+body[data-sel="bold"] .tile.selected,
+body[data-sel="bold"] .tile.selected:hover,
+body[data-sel="bold"] .tile.free.selected,
+body[data-sel="bold"] .tile.free.selected:hover {
+  translate: 0 calc(var(--tile-sel-lift, 6px) * -1.5);
+  scale: 1.08;
   outline: max(3px, calc(var(--tile-w, 56px) * 0.07)) solid #fff;
   outline-offset: max(3px, calc(var(--tile-w, 56px) * 0.05));
   box-shadow:
@@ -51,11 +65,6 @@ body[data-sel="bold"] .tile.selected {
 .tile.match-cand {
   outline: max(3px, calc(var(--tile-w, 56px) * 0.06)) dashed var(--accent-gold-bright);
   outline-offset: 2px;
-  animation: cand-pulse 0.9s ease-in-out infinite;
-}
-@keyframes cand-pulse {
-  0%, 100% { outline-offset: 2px; filter: brightness(1); }
-  50%      { outline-offset: 5px; filter: brightness(1.14); }
 }
 
 /* ---------- 4. Подсказка: «заметная» и «очень заметная» ---------- */
@@ -64,21 +73,6 @@ body[data-sel="bold"] .tile.selected {
   z-index: 9998 !important;
   outline: max(4px, calc(var(--tile-w, 56px) * 0.08)) solid #fff;
   outline-offset: 2px;
-  animation: hint-bold 0.8s ease-in-out infinite;
-}
-@keyframes hint-bold {
-  0%, 100% {
-    transform: translateY(-2px) scale(1);
-    box-shadow:
-      0 0 0 4px var(--tile-hint-glow),
-      0 0 16px 4px var(--tile-hint-glow-soft);
-  }
-  50% {
-    transform: translateY(-7px) scale(1.1);
-    box-shadow:
-      0 0 0 9px var(--tile-hint-glow),
-      0 0 44px 14px var(--tile-hint-glow-soft);
-  }
 }
 /* Бегущая пунктирная линия между двумя фишками подсказки */
 .hint-link {
@@ -99,30 +93,16 @@ body[data-sel="bold"] .tile.selected {
   stroke: #fff;
   stroke-linecap: round;
   stroke-dasharray: 1 14;
-  animation: hint-dash 0.7s linear infinite;
+  animation: hint-dash 0.7s linear 4;
 }
 @keyframes hint-dash { to { stroke-dashoffset: -15; } }
 
-/* ---------- Плавный «подъезд» при автомасштабе ---------- */
-.board.rezoom .tile {
-  transition:
-    left 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-    top 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-    width 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-    height 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s ease,
-    opacity 0.25s ease,
-    filter 0.25s ease;
-}
-.board.rezoom { transition: width 0.55s ease, height 0.55s ease; }
+/* v44: «подъезд» при автомасштабе — одна анимация стола (Render.smoothReposition),
+   классов и переходов по каждой фишке здесь больше нет. */
 
 /* Уменьшенная анимация / лёгкий режим: без прыжков и «подъезда» */
 @media (prefers-reduced-motion: reduce) {
   .tile.hint-bold, .tile.hint-max, .tile.match-cand { animation: none; }
   .hint-link-line { animation: none; }
-  .board.rezoom .tile, .board.rezoom { transition: none; }
 }
-html[data-perf="lite"] .board.rezoom .tile,
-html[data-perf="lite"] .board.rezoom { transition: none; }
 html[data-perf="lite"] .tile.match-cand { animation: none; }

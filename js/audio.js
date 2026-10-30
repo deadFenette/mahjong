@@ -226,8 +226,10 @@ const Audio2 = (function () {
     route(g, wet || 0, pan);
   }
 
-  // Глухой «тук» — тело фишки: синус с быстрым падением высоты
-  function thump(freq, vol, delay, dur) {
+  // Глухой «тук» — тело фишки: синус с быстрым падением высоты.
+  // v42: pan (-1 лево … +1 право) — волна раздачи слышна как движение
+  // по столу: Восток (право) → Юг (центр) → Запад (лево) → Север (центр).
+  function thump(freq, vol, delay, dur, pan) {
     const t0 = ctx.currentTime + (delay || 0);
     const d = dur || 0.1;
     const osc = ctx.createOscillator();
@@ -239,7 +241,7 @@ const Audio2 = (function () {
     g.gain.linearRampToValueAtTime(vol, t0 + 0.003);
     g.gain.exponentialRampToValueAtTime(0.0008, t0 + d);
     osc.connect(g);
-    route(g, 0);
+    route(g, 0, pan);
     osc.start(t0);
     osc.stop(t0 + d + 0.02);
   }
@@ -269,10 +271,11 @@ const Audio2 = (function () {
 
   // «Фишка о дерево»: тук + короткий приглушённый шорох.
   // bright 0..1 — насколько «сухой и яркий» контакт.
-  function tap(vol, delay, bright) {
+  // v42: pan — позиция на столе (см. thump).
+  function tap(vol, delay, bright, pan) {
     const b = Math.max(0, Math.min(1, bright == null ? 0.3 : bright));
-    thump(150, vol, delay, 0.09);
-    noise(0.025, vol * 0.5, delay, { type: 'lowpass', freq: 700 + b * 2500, q: 0.7 });
+    thump(150, vol, delay, 0.09, pan);
+    noise(0.025, vol * 0.5, delay, { type: 'lowpass', freq: 700 + b * 2500, q: 0.7, pan: pan });
   }
 
   // Нота тональности: ступень пентатоники → частота

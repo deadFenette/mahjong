@@ -44,7 +44,7 @@
   box-shadow: 0 1px 2px var(--shadow-strong);
 }
 .mix-preview.is-fresh .preview-tile {
-  animation: mix-tile-in 0.32s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation: mix-tile-in 0.32s var(--ease-lux) backwards;
 }
 @keyframes mix-tile-in {
   from { opacity: 0; transform: translateY(-6px) scale(0.85); }
@@ -115,6 +115,72 @@
 .mix-preview .preview-tile[data-z="2"] { filter: brightness(0.95); }
 .mix-preview .preview-tile { border-bottom-width: 2px; }
 
+/* v45 (фикс бага «превью издалека»): при движении слайдера старая доска
+   гаснет сразу — не висит плотной «картинкой издалека», пока генератор
+   готовит новую (на слабых машинах это занимало секунду и больше) */
+.mix-preview .preview-tile { transition: opacity 0.18s ease; }
+.mix-preview.is-stale .preview-tile { opacity: 0.14; }
+
+/* v45: карточка способа «Из двух раскладок» гаснет на гигантах
+   (сращивание >200 фишек дорожает квадратично) */
+.mix-card.is-off { opacity: 0.38; pointer-events: none; }
+
+/* v45: панель за галкой «Гигантские доски» */
+.mix-cap-note {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* v40: знак для раскладки-иероглифа */
+.mix-glyph-input {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 14px;
+  font: 600 28px/1.2 'Noto Sans SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
+  text-align: center;
+  letter-spacing: 0.12em;
+  color: var(--text-main);
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
+}
+.mix-glyph-input:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 2px; border-color: var(--accent-gold); }
+.mix-glyph-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 148px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.mix-glyph-chip {
+  width: 40px;
+  height: 40px;
+  font: 700 20px/1 'Noto Sans SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
+  color: var(--text-main);
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.mix-glyph-chip:hover { border-color: var(--accent-gold); }
+.mix-glyph-chip.active { border-color: var(--accent-gold); background: var(--card-bg-active); }
+.mix-glyph-chip:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 2px; }
+.mix-hardness-fact {
+  font-size: 13px;
+  color: var(--accent-gold);
+  min-height: 1.2em;
+  cursor: help;
+}
+#mix-hardness-group, #mix-sym-block, #mix-stagger-row { transition: opacity 0.25s ease; }
+#mix-hardness-group.is-off, #mix-sym-block.is-off, #mix-stagger-row.is-off {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
 @media (max-width: 760px) {
   .mix-body { grid-template-columns: 1fr; }
   .mix-stage { position: static; }
@@ -122,5 +188,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .mix-preview.is-fresh .preview-tile { animation: none; }
+  .mix-preview .preview-tile { transition: none; }
 }
 

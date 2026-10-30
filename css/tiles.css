@@ -20,6 +20,16 @@
       (--tile-edge) и более глубокая падающая тень —
       слои читаются однозначно.
 
+   v44 «Шёлк» (плавность):
+   Поза фишки теперь живёт в ТРЁХ независимых свойствах — translate
+   (подъём), scale (размер), rotate (наклон). Раньше всё было в одном
+   transform, и состояния перебивали друг друга целиком: hover (4px)
+   против selected (6px) против кадров анимации — отсюда рывки при
+   каждом выборе. Теперь каждый слой меняется своим переходом,
+   пружина выбора — обычный transition (его можно прервать в любой
+   момент без скачка), а стартовый кадр keyframes берётся из текущей
+   позы (кадр 0% не пишем — браузер подставит то, что есть сейчас).
+
    v8 (анимации):
    1. tile-deal — каскадная раздача: фишки падают на доску
       с лёгким поворотом и упругой посадкой. Задержка
@@ -30,7 +40,7 @@
       Render.flyVectorFor), вспыхивают и растворяются.
    3. match-spark — золотые искры в точке матча,
    4. score-float — всплывающий «+N» над собранной парой,
-   5. selected-glow — мягкое дыхание свечения выбранной фишки.
+   5. (v44) ореол выбранной фишки — статичный; бесконечных циклов в игре нет.
    ============================================================ */
 
 .tile {
@@ -63,12 +73,24 @@
     /* Падающая тень — глубже и мягче, чем в v5: слои отделяются явно */
     0 calc(var(--tile-depth, 4px) * 1.3) calc(var(--tile-depth, 4px) * 0.6) var(--shadow-strong),
     0 calc(var(--tile-depth, 4px) * 2.2) calc(var(--tile-depth, 4px) * 1.6) var(--shadow-strong);
+  /* v44: поза = translate + scale + rotate, у каждого свой переход.
+     Подъём и размер едут по пружине (--ease-spring: linear() с
+     перелётом ~10%, в старых браузерах — cubic-bezier), наклон — мягко
+     без перелёта. Тень и яркость догоняют чуть неспешнее позы. */
+  translate: 0 0;
+  scale: 1;
+  rotate: 0deg;
   transition:
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s ease,
-    opacity 0.25s ease,
-    filter 0.25s ease;
-  will-change: transform;
+    translate var(--t-pose, 0.42s) var(--ease-spring, cubic-bezier(0.3, 1.2, 0.5, 1)),
+    scale var(--t-pose, 0.42s) var(--ease-spring, cubic-bezier(0.3, 1.2, 0.5, 1)),
+    rotate 0.32s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform 0.22s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+    box-shadow 0.3s var(--ease-soft, cubic-bezier(0.25, 0.8, 0.3, 1)),
+    opacity 0.28s ease,
+    filter 0.3s ease;
+  /* will-change: transform убран: 144 постоянных слоя съедали память,
+     а масштабированный слой растеризуется нерезко. Браузер сам
+     поднимает фишку в слой на время анимации. */
   /* Защита от подпиксельного размытия SVG */
   -webkit-font-smoothing: antialiased;
   font-smoothing: antialiased;
@@ -116,14 +138,31 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(155deg,
-    rgba(255, 255, 255, 0.28) 0%,
-    rgba(255, 255, 255, 0.10) 26%,
-    rgba(255, 255, 255, 0) 52%,
-    rgba(0, 0, 0, 0.06) 100%);
+  /* v44: два слоя — привычный глянец и узкая диагональная полоса-блик,
+     которая в покое стоит за левым краем фишки, а при наведении/выборе
+     пробегает по грани (transition background-position; обратно — без
+     перехода, уже невидимо за краем). */
+  background:
+    linear-gradient(155deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.10) 26%,
+      rgba(255, 255, 255, 0) 52%,
+      rgba(0, 0, 0, 0.06) 100%),
+    linear-gradient(105deg,
+      rgba(255, 255, 255, 0) 38%,
+      rgba(255, 255, 255, 0.78) 50%,
+      rgba(255, 255, 255, 0) 62%);
+  background-size: 100% 100%, 250% 100%;
+  background-position: 0 0, 97% 0;
+  background-repeat: no-repeat;
   pointer-events: none;
   opacity: 0.6;
   transition: opacity 0.25s ease;
+}
+.tile.free:hover::after,
+.tile.selected::after {
+  background-position: 0 0, 3% 0;
+  transition: opacity 0.25s ease, background-position 0.62s var(--ease-out, ease-out);
 }
 
 /* ---------- Закрытые (недоступные) фишки ---------- */
@@ -166,8 +205,13 @@
     0 0 14px var(--tile-free-glow-soft);
 }
 
+/* hover — только поза; тени/свечение — ниже, как раньше */
 .tile.free:hover {
-  transform: translateY(calc(var(--tile-hover-lift, 4px) * -1));
+  /* v44: наклон к курсору (Render.bindTilt пишет --tilt-x/--tilt-y в −1…1);
+     без указателя переменные пусты → поворот нулевой, как будто его нет */
+  transform: perspective(640px) rotateX(calc(var(--tilt-y, 0) * -5deg)) rotateY(calc(var(--tilt-x, 0) * 5deg));
+  translate: 0 calc(var(--tile-hover-lift, 4px) * -1);
+  scale: 1.012;
   box-shadow:
     0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
     inset 1px 1px 0 var(--tile-highlight),
@@ -185,12 +229,32 @@
 }
 .tile.free:hover::after { opacity: 0.9; }
 
+/* v44: «нажатие» — фишка мгновенно (80 мс) вдавливается под пальцем/мышью.
+   Отклик на намерение приходит в первый же кадр, а при отпускании
+   фишка плавно взлетает в позу выбора по пружине — без стыка. */
+.tile.free:active {
+  translate: 0 -1px;
+  scale: 0.972;
+  transition:
+    translate 0.08s var(--ease-out, ease-out),
+    scale 0.08s var(--ease-out, ease-out),
+    rotate 0.2s ease,
+    box-shadow 0.12s ease,
+    opacity 0.28s ease,
+    filter 0.3s ease;
+}
+
 /* Выбранная — заметно приподнимается, видна поверх всех слоёв.
-   v8: мягкое «дыхание» свечения (анимируется только filter —
-   transform оставлен статике, чтобы не мешать hover/z-lift) */
-.tile.selected {
-  transform: translateY(calc(var(--tile-sel-lift, 6px) * -1)) scale(1.02);
-  animation: selected-glow 1.8s ease-in-out 0.45s infinite;
+   v44: ПОЗА выбора задана и для :hover — раньше .tile.free:hover
+   (специфичность выше) перебивал .selected, и выбранная фишка под
+   курсором прыгала с 6px на 4px сразу после анимации. Теперь у
+   hover и selected общий итог, а пружина доводит фишку до него. */
+.tile.selected,
+.tile.selected:hover,
+.tile.free.selected,
+.tile.free.selected:hover {
+  translate: 0 calc(var(--tile-sel-lift, 6px) * -1);
+  scale: 1.035;
   z-index: 9999 !important;
   box-shadow:
     0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
@@ -205,111 +269,169 @@
     0 calc(var(--tile-depth, 4px) * 3) 8px var(--shadow-strong),
     0 calc(var(--tile-depth, 4px) * 4.5) 28px var(--shadow-strong),
     0 0 0 3px var(--accent-gold),
-    0 0 24px var(--accent-gold-soft);
+    0 0 12px var(--accent-gold-soft);
 }
 .tile.selected::after { opacity: 0.85; }
-@keyframes selected-glow {
-  0%, 100% { filter: saturate(1.05) brightness(1.02); }
-  50%      { filter: saturate(1.3) brightness(1.14); }
+
+/* v44: «дыхание» выбранной фишки — отдельная золотая аура-ребёнок
+   (Render.setSelected создаёт <i class="tile-halo">). Раньше дышал
+   filter самой фишки; при снятии выбора яркость падала скачком.
+   Теперь дышит ТОЛЬКО opacity ауры (композитор, без перерисовки),
+   а гаснет она плавным переходом. */
+.tile-halo {
+  position: absolute;
+  inset: calc(var(--tile-depth, 4px) * -1.2);
+  border-radius: calc(var(--tile-radius, 8px) + 4px);
+  pointer-events: none;
+  box-shadow:
+    0 0 calc(var(--tile-depth, 4px) * 3) calc(var(--tile-depth, 4px) * 0.4) var(--accent-gold-soft),
+    0 0 0 2px var(--accent-gold-soft);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.tile.selected > .tile-halo {
+  /* V4: ореол СТАТИЧНЫЙ: непрерывное «дыхание» выбранной фишки работало
+     как мигание на краю внимания. Выбор читается чётким кольцом. */
+  opacity: 0.4;
 }
 
-/* ---------- Каскадная раздача (v8) ----------
+/* ---------- Каскадная раздача (v8, «Шёлк» v44) ----------
    Ставится Render.playDealAnimation() на старте партии,
    перемешивании и отмене хода. Задержка — от координат фишки,
    поэтому волна накатывает по доске, а не «всё разом».
-   Конечный кадр повторяет естественные стили (opacity из
-   var(--tile-blocked-alpha) — не ломает слайдер прозрачности),
-   а по animationend класс снимается совсем. */
+   v44: две анимации вместо одной —
+     tile-deal       движение (translate/scale/rotate): падение с
+                     ускорением, лёгкая «посадка» в стол, мягкий дожим;
+                     конечный кадр НЕ пишем — берётся естественная поза;
+     tile-deal-fade  проявление (opacity), быстрое и независимое: фишка
+                     становится видна ещё в полёте, но конечная
+                     прозрачность — та, что выставил слайдер
+                     «Прозрачность фишек» (кадр to не пишем).
+   Фильтры (brightness/saturate) из кадров убраны: на 140 фишках
+   это 140 слоёв фильтра одновременно — главный источник подтормажива-
+   ния раздачи. По animationend класс снимается совсем. */
 .tile.enter {
-  animation: tile-deal 0.55s cubic-bezier(0.22, 1.1, 0.36, 1) both;
+  animation:
+    tile-deal 0.66s linear both,
+    tile-deal-fade 0.24s ease-out both;
   animation-delay: var(--deal-delay, 0ms);
 }
 @keyframes tile-deal {
   0% {
-    opacity: 0;
-    transform: translateY(calc(var(--tile-h, 78px) * -0.5)) scale(0.68) rotate(var(--deal-rot, 0deg));
-    filter: brightness(1.3) saturate(0.75);
+    translate: 0 calc(var(--tile-h, 78px) * -0.42);
+    scale: 0.9;
+    rotate: var(--deal-rot, 0deg);
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.55);   /* падение: разгон */
   }
-  55% { opacity: 1; }
-  78% {
-    transform: translateY(calc(var(--tile-h, 78px) * 0.035)) scale(1.02) rotate(0deg);
+  68% {
+    translate: 0 calc(var(--tile-h, 78px) * 0.025);
+    scale: 1.012;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);        /* посадка: мягкий дожим */
   }
-  100% {
-    opacity: var(--tile-blocked-alpha, 1);
-    transform: translateY(0) scale(1) rotate(0deg);
-    filter: brightness(1) saturate(1);
-  }
+  /* 100%: естественная поза (translate 0, scale 1, rotate 0) */
+}
+@keyframes tile-deal-fade {
+  from { opacity: 0; }
 }
 
-/* Подсказка — мягкая пульсация */
+/* Подсказка — мягкая пульсация.
+   v44: свечение СТАТИЧНОЕ (оно появляется/гаснет обычным переходом
+   box-shadow), а пульсирует только поза и яркость — transform-подобные
+   свойства и filter идут на композиторе, без перерисовки теней. */
 .tile.hint {
-  animation: hint-pulse 0.7s ease-in-out 3;
+  box-shadow:
+    0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
+    inset 1px 1px 0 var(--tile-highlight),
+    inset -1px -1px 0 var(--tile-shadow),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.12),
+    inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
+    0 calc(var(--tile-depth, 4px) * 0.5) 0 var(--tile-shadow),
+    0 var(--tile-depth, 4px) 0 var(--tile-shadow),
+    0 calc(var(--tile-depth, 4px) * 1.25) 4px var(--shadow-medium),
+    0 calc(var(--tile-depth, 4px) * 2) 12px var(--shadow-strong),
+    0 0 0 4px var(--tile-hint-glow),
+    0 0 30px var(--tile-hint-glow-soft);
+  animation: hint-pulse 0.8s var(--ease-in-out, ease-in-out) 3;
 }
 @keyframes hint-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
-      inset 1px 1px 0 var(--tile-highlight),
-      inset -1px -1px 0 var(--tile-shadow),
-      inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.08),
-      inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
-      0 calc(var(--tile-depth, 4px) * 0.5) 0 var(--tile-shadow),
-      0 var(--tile-depth, 4px) 0 var(--tile-shadow),
-      0 calc(var(--tile-depth, 4px) * 1.25) 4px var(--shadow-medium),
-      0 calc(var(--tile-depth, 4px) * 2) 12px var(--shadow-strong),
-      0 0 0 0 var(--tile-hint-glow);
-  }
+  /* 0% и 100% — естественная поза */
   50% {
-    box-shadow:
-      0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
-      inset 1px 1px 0 var(--tile-highlight),
-      inset -1px -1px 0 var(--tile-shadow),
-      inset 0 0 0 calc(var(--tile-depth, 4px) * 0.6) rgba(255, 255, 255, 0.12),
-      inset 0 0 0 calc(var(--tile-depth, 4px) * 0.8) rgba(0, 0, 0, 0.06),
-      0 calc(var(--tile-depth, 4px) * 0.5) 0 var(--tile-shadow),
-      0 var(--tile-depth, 4px) 0 var(--tile-shadow),
-      0 calc(var(--tile-depth, 4px) * 1.25) 4px var(--shadow-medium),
-      0 calc(var(--tile-depth, 4px) * 2) 12px var(--shadow-strong),
-      0 0 0 4px var(--tile-hint-glow),
-      0 0 30px var(--tile-hint-glow-soft);
-    transform: translateY(calc(var(--tile-hint-lift, 2px) * -1));
+    translate: 0 calc(var(--tile-hint-lift, 2px) * -1.5);
+    scale: 1.035;
+    filter: brightness(1.14);
   }
 }
 
-/* Покачивание (клик по недоступной фишке) */
+/* Покачивание (клик по недоступной фишке).
+   v44: затухающее «нет»: размах убывает 5 → 4 → 2.5 → 1.2 px, ease-out —
+   вместо двух резких толчков туда-обратно. Только translate: поза
+   подъёма (если есть) не затрагивается. */
 .tile.shake {
-  animation: shake 0.3s ease;
+  animation: shake 0.38s var(--ease-out, ease-out);
 }
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(calc(var(--tile-w-shake, 5px) * -1)); }
-  75% { transform: translateX(var(--tile-w-shake, 5px)); }
+  0%, 100% { translate: 0 0; }
+  16% { translate: calc(var(--tile-w-shake, 3.5px) * -1) 0; }
+  38% { translate: var(--tile-w-shake, 5px) 0; }
+  58% { translate: calc(var(--tile-w-shake, 3.5px) * -0.5) 0; }
+  78% { translate: calc(var(--tile-w-shake, 3.5px) * 0.24) 0; }
 }
 
-/* Удаление — анимация 450 мс, .removed ставится только после неё.
-   v8: пара сначала ПРИТЯГИВАЕТСЯ друг к другу (--fly-dx/--fly-dy
-   задаёт Render.animateRemove), вспыхивает и растворяется вверх. */
-.tile.removing {
-  animation: tile-vanish 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+/* ---------- Матч: сближение → растворение (v8, «Шёлк» v44) ----------
+   Два состояния подряд, и оба держат ОДНУ И ТУ ЖЕ позу:
+     .matching — «ожидание»: за 170 мс фишка по переходу поднимается
+                 и наклоняется к партнёру (--tilt-a знак ставит Render);
+     .removing — растворение (tile-vanish): кадр 0% не пишется, значит
+                 стартует ровно из позы ожидания — стык бесшовный,
+                 никаких --lift-base/--lift-scale больше не нужно.
+   Подъём совпадает с выбранной фишкой, поэтому «вторая» фишка пары
+   поднимается плавно, а первая просто остаётся там, где стояла. */
+.tile.matching,
+.tile.removing,
+.tile.free.matching,
+.tile.free.removing,
+.tile.free.matching:hover,
+.tile.free.removing:hover,
+.tile.free.matching:active,
+.tile.free.removing:active {
+  translate: 0 calc(var(--tile-sel-lift, 6px) * -1);
+  scale: 1.05;
+  rotate: var(--tilt-a, 0deg);
+  z-index: 9997 !important;
   pointer-events: none;
-  /* исчезающая фишка видна поверх соседних слоёв */
+}
+.tile.matching {
+  transition:
+    translate 0.17s var(--ease-out, ease-out),
+    scale 0.17s var(--ease-out, ease-out),
+    rotate 0.17s var(--ease-out, ease-out),
+    box-shadow 0.17s ease,
+    opacity 0.28s ease,
+    filter 0.17s ease;
+}
+.tile.removing {
+  animation: tile-vanish 0.56s linear forwards;
   z-index: 9998 !important;
 }
 @keyframes tile-vanish {
   0% {
-    transform: translate(0, 0) scale(1) rotate(0deg);
-    opacity: 1;
-    filter: brightness(1) saturate(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);   /* сближение */
   }
-  35% {
-    transform: translate(var(--fly-dx, 0px), var(--fly-dy, 0px)) scale(1.12) rotate(3deg);
+  36% {
+    translate: var(--fly-dx, 0px) calc(var(--fly-dy, 0px) - var(--tile-sel-lift, 6px));
+    scale: 1.1;
+    rotate: calc(var(--tilt-a, 0deg) + 1.5deg);
     opacity: 1;
-    filter: brightness(1.5) saturate(1.25);
+    filter: brightness(1.28) saturate(1.12);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1);     /* лёгкий всплеск и уход вверх */
   }
   100% {
-    transform: translate(calc(var(--fly-dx, 0px) * 1.6), calc(var(--fly-dy, 0px) * 1.6 - 26px)) scale(0.15) rotate(12deg);
+    translate: calc(var(--fly-dx, 0px) * 1.5) calc(var(--fly-dy, 0px) * 1.5 - 26px);
+    scale: 0.3;
+    rotate: calc(var(--tilt-a, 0deg) + 7deg);
     opacity: 0;
-    filter: brightness(1.9);
+    filter: brightness(1.5);
   }
 }
 .tile.removed { display: none; }
@@ -342,7 +464,7 @@
 
 /* ---------- Всплывающий «+N» над собранной парой (v8) ---------- */
 .score-float {
-  position: absolute;
+  position: fixed;   /* v44: летит в табло через весь экран — лежит в <body> */
   z-index: 10002;
   pointer-events: none;
   font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
@@ -353,7 +475,7 @@
     0 1px 0 var(--shadow-strong, rgba(0, 0, 0, 0.4)),
     0 0 14px var(--accent-gold-glow, rgba(232, 184, 75, 0.6));
   white-space: nowrap;
-  animation: score-float-up 1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation: score-float-up 1s var(--ease-lux) forwards;
 }
 @keyframes score-float-up {
   0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.7); }
@@ -380,7 +502,7 @@
     drop-shadow(0 2px 0 var(--shadow-strong, rgba(0, 0, 0, 0.4)))
     drop-shadow(0 0 18px var(--accent-gold-glow, rgba(232, 184, 75, 0.75)));
   white-space: nowrap;
-  animation: combo-float-up 1.5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation: combo-float-up 1.5s var(--ease-lux) forwards;
 }
 @keyframes combo-float-up {
   0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }

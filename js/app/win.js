@@ -43,8 +43,11 @@
     if (winUnlocked.length) Storage.unlockAchievements(winUnlocked);
 
     // Заполняем экран победы
-    document.getElementById('win-score').textContent = state.score;
-    document.getElementById('win-time').textContent = A.formatTime(time);
+    // v44: счёт и время «накатываются» с нуля, пока въезжают плашки (0.45 с)
+    A.rollNumber(document.getElementById('win-score'), state.score,
+      { from: 0, ms: 1100, delay: 450, fx: 'celebrate' });
+    A.rollNumber(document.getElementById('win-time'), time,
+      { from: 0, ms: 1100, delay: 450, fx: 'celebrate', format: A.formatTime });
     document.getElementById('win-hints').textContent = state.hintsUsed;
 
     // v10: золотой бейдж «Новый рекорд!» — побит лучший счёт или время
@@ -87,6 +90,7 @@
     A.showScreen('win');
     renderWinAchievements(winUnlocked); // v11
     launchWinBurst();
+    launchWinRain(); // v42
   }
 
   // ---------- Ачивки на экране победы (v11) ----------
@@ -135,6 +139,62 @@
       p.style.background = colors[i % colors.length];
       burst.appendChild(p);
     }
+  }
+
+  // ---------- Дождь из мини-фишек мастей (v42 «Intent») ----------
+  // Чистый CSS: мини-фишки (точки/бамбук/иероглифы с чернильными
+  // цветами фишек) падают сверху с вращением. У каждой свой размер,
+  // длительность, задержка, поворот и снос — дождь неровный, живой.
+  // В лёгком режиме и при reduced-motion не запускается вовсе.
+  function launchWinRain() {
+    const screenEl = document.getElementById('screen-win');
+    if (!screenEl) return;
+    // Деградация: лёгкий режим / уменьшенная анимация — без дождя
+    if (typeof Perf !== 'undefined' && Perf.isLite && Perf.isLite()) return;
+    try {
+      if (typeof window.matchMedia === 'function' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (e) { /* нет matchMedia — играем как обычно */ }
+
+    const old = document.getElementById('win-rain');
+    if (old) old.remove();
+
+    const box = document.createElement('div');
+    box.className = 'win-rain';
+    box.id = 'win-rain';
+    box.setAttribute('aria-hidden', 'true');
+
+    // Мастя → иероглиф и чернила (как на настоящих фишках):
+    // 筒 — точки, 索 — бамбук, 万 — символы, 中/發 — драконы
+    const symbols = [
+      { s: '筒', ink: '#1a1a1a' },
+      { s: '筒', ink: '#c8202a' },
+      { s: '索', ink: '#1f7a3a' },
+      { s: '万', ink: '#1a1a1a' },
+      { s: '萬', ink: '#c8202a' },
+      { s: '中', ink: '#c8202a' },
+      { s: '發', ink: '#1f7a3a' },
+    ];
+
+    const COUNT = 30;
+    for (let i = 0; i < COUNT; i++) {
+      const d = document.createElement('span');
+      const sym = symbols[(Math.random() * symbols.length) | 0];
+      d.className = 'win-drop';
+      d.textContent = sym.s;
+      const size = 18 + Math.random() * 14; // 18–32px
+      d.style.left = (2 + Math.random() * 96) + '%';
+      d.style.setProperty('--rd-size', size.toFixed(0) + 'px');
+      d.style.setProperty('--rd-ink', sym.ink);
+      d.style.setProperty('--rf', (2.6 + Math.random() * 2).toFixed(2) + 's');
+      d.style.setProperty('--rd', (Math.random() * 1.4).toFixed(2) + 's');
+      d.style.setProperty('--rr', (300 + Math.random() * 480).toFixed(0) + 'deg');
+      d.style.setProperty('--rdx', (Math.random() * 60 - 30).toFixed(0) + 'px');
+      box.appendChild(d);
+    }
+    screenEl.appendChild(box);
+    // Дождь конечен: убираем контейнер, когда последняя капля упала
+    setTimeout(() => { if (box.parentNode) box.remove(); }, 7800);
   }
 
   Object.assign(A, {

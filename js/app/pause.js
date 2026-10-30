@@ -19,11 +19,14 @@
     if (sEl) sEl.textContent = state.score;
     if (tEl) tEl.textContent = A.formatTime(Game.getElapsedSeconds());
     A.updatePauseMusicLabel();
+    Render.setPauseCover(true); // v44: фишки переворачиваются рубашкой вверх
+    if (A.resetLoupe) A.resetLoupe(); // лупа не должна выдавать фишку на паузе
     document.getElementById('pause-overlay').hidden = false;
     A.cancelAutohint();
   }
   function closePause() {
     document.getElementById('pause-overlay').hidden = true;
+    Render.setPauseCover(false);
     Game.resume(); // v9
     Music.duck(false); // v10: возвращаем громкость
     A.state.lastActionTime = Date.now();

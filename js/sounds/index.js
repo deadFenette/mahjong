@@ -43,6 +43,8 @@ Sounds.CATALOG = [
   { id: 'deal',     name: Sounds.deal.name,     desc: Sounds.deal.desc     },
   // Финал
   { id: 'win',      name: Sounds.win.name,      desc: Sounds.win.desc      },
+  // Прочее (v42): штамп достижений
+  { id: 'stamp',    name: Sounds.stamp.name,    desc: Sounds.stamp.desc    },
 ];
 
 // Получить звук по id

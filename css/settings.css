@@ -309,3 +309,56 @@
 }
 .preset-name { font-size: 18px; font-weight: 700; }
 .preset-desc { font-size: 13px; opacity: 0.8; font-weight: 400; line-height: 1.35; }
+
+/* ============================================================
+   v44: меню «Графика и анимации» (раскрывающийся блок)
+   ============================================================ */
+.gfx-menu { border-radius: 12px; }
+.gfx-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  padding: 2px 0;
+}
+.gfx-summary::-webkit-details-marker { display: none; }
+.gfx-summary:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 4px; border-radius: 8px; }
+.gfx-summary-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gfx-title { margin: 0; }
+.gfx-chevron {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--accent-gold);
+  border-bottom: 2px solid var(--accent-gold);
+  rotate: 45deg;
+  translate: 0 -2px;
+  transition: rotate 0.3s var(--ease-out, ease-out), translate 0.3s var(--ease-out, ease-out);
+}
+.gfx-menu[open] .gfx-chevron { rotate: 225deg; translate: 0 2px; }
+.gfx-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  animation: gfx-open 0.34s var(--ease-out, ease-out);
+}
+@keyframes gfx-open {
+  from { opacity: 0; translate: 0 -8px; }
+}
+.gfx-sub { display: flex; flex-direction: column; gap: 10px; transition: opacity 0.25s ease; }
+.gfx-sub.is-disabled { opacity: 0.45; }
+.gfx-sub.is-disabled .mix-card,
+.gfx-sub.is-disabled .toggle-row { pointer-events: none; }
+.gfx-label {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, inherit);
+  opacity: 0.8;
+}
+.gfx-fx-list { display: flex; flex-direction: column; gap: 2px; }

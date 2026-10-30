@@ -58,9 +58,9 @@ suite('v34: автомасштаб — границы оставшихся фи�
     assertGt(part.w, full.w * 1.3, 'на пустеющем столе выигрыш должен быть заметным');
   });
 
-  test('shouldRefit: растим от +8%, уменьшаем всегда, мелочь не трогаем', () => {
-    assertEq(Render.shouldRefit(50, 53), false, '+6% — не стоит дёргать доску');
-    assertEq(Render.shouldRefit(50, 54), true, '+8% — стоит');
+  test('shouldRefit: растим от +12%, уменьшаем всегда, мелочь не трогаем', () => {
+    assertEq(Render.shouldRefit(50, 55), false, '+10% — не стоит дёргать доску (v44: порог 12%)');
+    assertEq(Render.shouldRefit(50, 56), true, '+12% — стоит');
     assertEq(Render.shouldRefit(50, 50), false);
     assertEq(Render.shouldRefit(50, 49), true, 'иначе фишки вылезут за экран');
     assertEq(Render.shouldRefit(0, 60), false);
@@ -154,7 +154,7 @@ suite('v34: таблицы настроек согласованы с HTML и CS
     assertOk(hlCss.includes('.tile.match-cand'));
     assertOk(hlCss.includes('.tile.hint-bold') && hlCss.includes('.tile.hint-max'));
     assertOk(hlCss.includes('.hint-link-line') && hlCss.includes('@keyframes hint-dash'));
-    assertOk(hlCss.includes('.board.rezoom .tile'));
+    assertOk(!hlCss.includes('.board.rezoom'), 'v44: подъезд — одна анимация стола, не переходы фишек');
   });
 
   test('CSS: подсветка уважает «уменьшить анимацию» и лёгкий режим', () => {

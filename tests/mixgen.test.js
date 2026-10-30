@@ -200,6 +200,6 @@ suite('MixGen — подключение в приложении', () => {
     const app = require('./sources').appSource();
     assertOk(/screens: \[[^\]]*'mix'/.test(app), 'экран mix не в списке screens');
     assertOk(/mixSpec: state\.layout\.mixSpec/.test(app), 'mixSpec не пишется в сейв');
-    assertOk(/MixGen\.generate\(saved\.mixSpec\)/.test(app), 'сейв микса не восстанавливается');
+    assertOk(/MixGen\.generate\(saved\.mixSpec\.ver \? saved\.mixSpec/.test(app), 'сейв микса не восстанавливается');
   });
 });

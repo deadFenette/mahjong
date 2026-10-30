@@ -13,7 +13,17 @@
    • blend («Из двух раскладок») — берём две готовые раскладки
      близкого размера и сращиваем их по волнистому шву
      (вертикальному, горизонтальному или диагональному).
-   • surprise — случайный выбор из двух способов.
+   • glyph («Иероглиф», v40) — доска в форме символа: иероглиф или
+     до трёх букв (js/mixglyph.js, маски лежат в js/glyph-data.js).
+   • surprise — случайный выбор из двух способов (scratch / blend).
+
+   v40: ЛУЧШИЙ ИЗ 8. Генератор строит до CANDIDATES кандидатов,
+   отбрасывает неразбираемые, измеряет красоту (MixMetrics.beauty) и —
+   если задана «Жёсткость» — реальную жёсткость доски, и берёт лучшего.
+   Номер выбранного кандидата пишется в mixSpec.pick, поэтому
+   «Продолжить» не повторяет поиск. Спецификации старше v40 (без ver)
+   восстанавливаются прежним алгоритмом (legacy), чтобы начатая партия
+   не получила другую доску.
 
    ПРАВИЛА, которые гарантирует генератор (проверяются тестами):
    1. Число фишек ЧЁТНОЕ, не меньше MIN_TILES и не больше
@@ -31,10 +41,21 @@ const MixGen = (function () {
 
   const MIN_TILES = 24;
   const MAX_TILES = 200;
+  // v45: «гигантские доски» — кап поднимается до 600, только когда в
+  // спецификации стоит bigboard: true (галка внизу экрана Микса).
+  // Без галки всё по-прежнему режется до 200: Daily и старые сохранения
+  // не должны заметить изменений.
+  const MAX_TILES_BIG = 600;
   const DEFAULT_TILES = 96;
   const MAX_LAYERS = 5;
-  const METHODS = ['blend', 'scratch', 'surprise'];
-  const SYMMETRIES = ['none', 'mirror', 'quad'];
+  const METHODS = ['blend', 'scratch', 'surprise', 'glyph'];
+  // none/mirror/quad — как раньше (индексы 0..2 использует Daily);
+  // point — поворот на 180°, diag — «мандала»: зеркала + диагональ,
+  // 8-кратная симметрия на квадратной сетке (доска получается высокой)
+  const SYMMETRIES = ['none', 'mirror', 'quad', 'point', 'diag'];
+  const VERSION = 2;
+  const CANDIDATES = 8;
+  const HARDNESS_WEIGHT = 0.15;   // штраф красоты за каждый пункт промаха
 
   const DEFAULTS = Object.freeze({
     method: 'surprise',
@@ -42,6 +63,7 @@ const MixGen = (function () {
     layers: 3,
     symmetry: 'mirror',
     stagger: false,
+    hardness: 0,     // 0 — «любая», 1..10 — целевая жёсткость
   });
 
   // ---------- Генератор случайных чисел (mulberry32) ----------
@@ -63,24 +85,39 @@ const MixGen = (function () {
   }
 
   // ---------- Параметры ----------
-  function clampEven(n) {
+  function clampEven(n, big) {
     let v = Math.round(Number(n));
     if (!Number.isFinite(v)) v = DEFAULT_TILES;
-    v = Math.max(MIN_TILES, Math.min(MAX_TILES, v));
+    const cap = big ? MAX_TILES_BIG : MAX_TILES;
+    v = Math.max(MIN_TILES, Math.min(cap, v));
     return v - (v % 2);
   }
 
   function normalize(opts) {
     const o = opts && typeof opts === 'object' ? opts : {};
     const layers = Math.round(Number(o.layers));
-    return {
+    const hard = Math.round(Number(o.hardness));
+    const pick = Math.round(Number(o.pick));
+    const legacy = o.legacy === true;
+    const big = o.bigboard === true;   // v45: галка «гигантская доска»
+    const out = {
       seed: (Math.floor(Number(o.seed)) >>> 0) || 1,
       method: METHODS.includes(o.method) ? o.method : DEFAULTS.method,
-      tiles: clampEven(o.tiles === undefined ? DEFAULT_TILES : o.tiles),
+      tiles: clampEven(o.tiles === undefined ? DEFAULT_TILES : o.tiles, big),
       layers: Number.isFinite(layers) ? Math.max(1, Math.min(MAX_LAYERS, layers)) : DEFAULTS.layers,
       symmetry: SYMMETRIES.includes(o.symmetry) ? o.symmetry : DEFAULTS.symmetry,
       stagger: o.stagger === true || o.stagger === 'true',
     };
+    if (legacy) { out.legacy = true; return out; }   // v31-спецификация: прежние поля
+    out.ver = VERSION;
+    out.bigboard = big;
+    out.hardness = Number.isFinite(hard) ? Math.max(0, Math.min(10, hard)) : 0;
+    if (Number.isFinite(pick) && pick >= 0 && pick < CANDIDATES) out.pick = pick;
+    // Символ хранится В спецификации: доска не зависит от шрифтов игрока
+    if (o.glyph && MixGlyph.decode(o.glyph)) {
+      out.glyph = { text: String(o.glyph.text || '').slice(0, 3), w: o.glyph.w, h: o.glyph.h, bits: o.glyph.bits };
+    }
+    return out;
   }
 
   // ---------- Геометрия (та же, что в game.js) ----------
@@ -105,8 +142,10 @@ const MixGen = (function () {
     return !(left && right);
   }
 
-  // Пробная разборка: можно ли убрать всё парами свободных фишек.
-  function isDismantlable(positions, rng) {
+  // Пробная разборка (v31, медленная O(n³)). Нужна ТОЛЬКО legacy-пути:
+  // решения «принять/отклонить» должны совпасть с теми, что принимались
+  // при создании старых сохранений. Новый код — MixMetrics.dismantlable.
+  function isDismantlableLegacy(positions, rng) {
     for (let attempt = 0; attempt < 12; attempt++) {
       let rest = positions.slice();
       let ok = true;
@@ -131,7 +170,9 @@ const MixGen = (function () {
     const errors = [];
     const ps = layout.positions;
     if (ps.length % 2 !== 0) errors.push('нечётное число фишек');
-    if (ps.length < MIN_TILES || ps.length > MAX_TILES) errors.push('число фишек вне диапазона: ' + ps.length);
+    // v45: кап зависит от галки «гигантская доска» в спецификации
+    const cap = layout.mixSpec && layout.mixSpec.bigboard ? MAX_TILES_BIG : MAX_TILES;
+    if (ps.length < MIN_TILES || ps.length > cap) errors.push('число фишек вне диапазона: ' + ps.length);
     if (layout.tilesCount !== ps.length) errors.push('tilesCount не совпадает');
     const maxZ = ps.reduce((m, p) => Math.max(m, p.z), 0);
     if (maxZ + 1 > MAX_LAYERS) errors.push('слишком много слоёв');
@@ -262,6 +303,12 @@ const MixGen = (function () {
     const pts = [[x, y]];
     if (sym === 'mirror' || sym === 'quad') pts.push([W - 1 - x, y]);
     if (sym === 'quad') { pts.push([x, H - 1 - y]); pts.push([W - 1 - x, H - 1 - y]); }
+    if (sym === 'point') pts.push([W - 1 - x, H - 1 - y]);
+    if (sym === 'diag') {
+      // группа квадрата (8 элементов): сетка обязана быть квадратной (W == H)
+      pts.push([W - 1 - x, y], [x, H - 1 - y], [W - 1 - x, H - 1 - y]);
+      pts.push([y, x], [W - 1 - y, x], [y, W - 1 - x], [W - 1 - y, W - 1 - x]);
+    }
     const seen = new Set();
     return pts.filter(([a, b]) => {
       const k = a + ',' + b;
@@ -288,23 +335,103 @@ const MixGen = (function () {
     }
   }
 
-  function genScratch(o, rng) {
+  // v40: подгонка до N целыми ОРБИТАМИ симметрии. Одиночный growTo/shrinkTo
+  // ломал симметрию (у «креста», «поворота», «мандалы» она почти не
+  // сохранялась); здесь добавляется/снимается сразу весь «узор из копий».
+  // Что не вошло по размеру орбиты — довершат одиночные growTo/shrinkTo.
+  function fitSymmetric(ps, N, rng, sym, W, H, maxLayers) {
+    const has = (x, y, z) => ps.some(o => o.z === z && Math.abs(o.x - x) < 0.01 && Math.abs(o.y - y) < 0.01);
+    let guard = 0;
+    while (ps.length > N && guard++ < 400) {
+      const need = ps.length - N;
+      let best = null;
+      let bestScore = -Infinity;
+      for (const t of ps) {
+        if (hasAbove(ps, t)) continue;
+        const orb = orbitOf(t.x, t.y, W, H, sym);
+        const members = orb.map(([x, y]) => ps.find(o => o.z === t.z &&
+          Math.abs(o.x - x) < 0.01 && Math.abs(o.y - y) < 0.01));
+        if (members.some(m => !m || hasAbove(ps, m)) || members.length > need) continue;
+        const d = Math.max(Math.abs(t.x - (W - 1) / 2) / Math.max(1, (W - 1) / 2),
+          Math.abs(t.y - (H - 1) / 2) / Math.max(1, (H - 1) / 2));
+        const score = d * 3 + t.z * 0.5 + members.length * 0.2 + rng() * 0.6;
+        if (score > bestScore) { bestScore = score; best = members; }
+      }
+      if (!best) break;
+      best.forEach(m => ps.splice(ps.indexOf(m), 1));
+    }
+    guard = 0;
+    while (ps.length < N && guard++ < 400) {
+      const need = N - ps.length;
+      const spots = [];
+      const seen = new Set();
+      const consider = (x, y, z, w) => {
+        const k = x + ',' + y + ',' + z;
+        if (seen.has(k)) return;
+        seen.add(k);
+        const orb = orbitOf(x, y, W, H, sym);
+        if (orb.length > need) return;
+        const free = (a, b) => !ps.some(o => o.z === z && overlaps(o, { x: a, y: b }));
+        const ok = orb.every(([a, b], i) =>
+          a >= 0 && b >= 0 && a <= W - 1 && b <= H - 1 && free(a, b) &&
+          (z === 0 || has(a, b, z - 1)) &&
+          orb.every(([c, d], j) => j <= i || !overlaps({ x: a, y: b }, { x: c, y: d })));
+        if (!ok) return;
+        orb.forEach(([a, b]) => seen.add(a + ',' + b + ',' + z));
+        spots.push({ orb, z, w: w * orb.length });
+      };
+      for (const g of ps.filter(p => p.z === 0)) {
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nb = ps.filter(o => o.z === 0 &&
+            Math.abs(o.x - (g.x + dx)) <= 1.01 && Math.abs(o.y - (g.y + dy)) <= 1.01).length;
+          consider(g.x + dx, g.y + dy, 0, nb * nb);
+        }
+      }
+      for (const t of ps) {
+        if (t.z + 1 >= maxLayers) continue;
+        const nbTop = ps.filter(o => o.z === t.z + 1 &&
+          Math.abs(o.x - t.x) <= 1.01 && Math.abs(o.y - t.y) <= 1.01).length;
+        consider(t.x, t.y, t.z + 1, 0.15 + 3 * nbTop);
+      }
+      if (!spots.length) break;
+      let total = 0;
+      spots.forEach(c => { total += c.w; });
+      let r = rng() * total;
+      let pick = spots[spots.length - 1];
+      for (const c of spots) { r -= c.w; if (r <= 0) { pick = c; break; } }
+      pick.orb.forEach(([a, b]) => ps.push({ x: a, y: b, z: pick.z }));
+    }
+  }
+
+  // ov — необязательные рычаги формы (aspect, compact, gain, stagger),
+  // которыми pickBest направляет кандидатов к целевой жёсткости
+  function genScratch(o, rng, ov) {
+    ov = ov || {};
+    const stagger = ov.stagger !== undefined ? ov.stagger : o.stagger;
     const N = o.tiles;
     const sym = o.symmetry;
-    const targets = layerTargets(N, o.layers, o.stagger);
+    const targets = layerTargets(N, o.layers, stagger);
 
     // Сетка основания: нечётные размеры — ось симметрии проходит через клетки
     const area = Math.max(40, targets[0] * (2.3 + rng() * 1.1));
-    const aspect = 1.7 + rng() * 0.9;
+    let aspect = 1.7 + rng() * 0.9;
+    if (ov.aspect) aspect = ov.aspect;
     let H = Math.max(3, Math.round(Math.sqrt(area / aspect)));
     if (H % 2 === 0) H += 1;
     let W = Math.max(5, Math.round(H * aspect));
     if (W % 2 === 0) W += 1;
     while (W * H < targets[0] * 1.6) { W += 2; }
+    if (sym === 'diag') {            // «мандала»: квадратная нечётная сетка
+      let S = Math.max(W, H);
+      if (S % 2 === 0) S += 1;
+      while (S * S < targets[0] * 1.6) S += 2;
+      W = S; H = S;
+    }
 
     const cx = (W - 1) / 2;
     const cy = (H - 1) / 2;
-    const compact = 1 + rng() * 1.8;   // 1 — рваная форма, 2.8 — плотное пятно
+    let compact = 1 + rng() * 1.8;     // 1 — рваная форма, 2.8 — плотное пятно
+    if (ov.compact) compact = ov.compact;
     // «Притягивающие» точки: пятно тянется к ним лопастями (крест,
     // звезда, рукава). Они тоже подчиняются симметрии.
     const attract = [[cx, cy]];
@@ -314,7 +441,8 @@ const MixGen = (function () {
       const ay = Math.floor(rng() * H);
       orbitOf(ax, ay, W, H, sym).forEach(pt => attract.push(pt));
     }
-    const gain = 1.2 + rng() * 2.6;    // насколько сильно лопасти вытягиваются
+    let gain = 1.2 + rng() * 2.6;      // насколько сильно лопасти вытягиваются
+    if (ov.gain) gain = ov.gain;
 
     // --- Слой 0: растим пятно ---
     const base = new Map();
@@ -364,7 +492,7 @@ const MixGen = (function () {
     for (let z = 1; z < targets.length; z++) {
       const prev = new Map(layerCells.map(c => [c.x + ',' + c.y, c]));
       let cands = [];
-      if (o.stagger) {
+      if (stagger) {
         // центры полностью заполненных блоков 2×2 — классическая «пирамида»
         for (const c of layerCells) {
           if (prev.has((c.x + 1) + ',' + c.y) && prev.has(c.x + ',' + (c.y + 1)) &&
@@ -401,6 +529,9 @@ const MixGen = (function () {
     }
 
     const canvas = { minX: 0, minY: 0, maxX: W - 1, maxY: H - 1 };
+    if (!o.legacy && sym !== 'none' && all.length !== N) {
+      fitSymmetric(all, N, rng, sym, W, H, Math.min(o.layers, MAX_LAYERS));
+    }
     if (all.length > N) shrinkTo(all, N, rng);
     if (all.length < N) growTo(all, N, rng, Math.min(o.layers, MAX_LAYERS), canvas);
     return { positions: all, parts: [] };
@@ -475,21 +606,135 @@ const MixGen = (function () {
   }
 
   // ============================================================
+  //  СПОСОБ 3: «ИЕРОГЛИФ» (v40)
+  // ============================================================
+
+  // variant 0..3 — разный порог чернил: даёт кандидатам чуть разную
+  // толщину штрихов, из которых выбирается вернейший
+  function genGlyph(o, variant) {
+    const glyph = o.glyph || MixGlyph.dailyGlyph(o.seed);
+    const r = MixGlyph.layoutFromGlyph(glyph, o.tiles, o.layers, variant);
+    if (!r) return null;
+    return { positions: r.positions, parts: [], fidelity: r.fidelity, glyph };
+  }
+
+  // ============================================================
   //  ТОЧКА ВХОДА
   // ============================================================
 
-  const SYM_TEXT = { none: 'без симметрии', mirror: 'зеркальная', quad: 'крестом' };
+  const SYM_TEXT = {
+    none: 'без симметрии', mirror: 'зеркальная', quad: 'крестом',
+    point: 'поворот на 180°', diag: 'мандала (8 осей)',
+  };
 
   function codeOf(seed) {
     return (seed >>> 0).toString(36).toUpperCase().padStart(4, '0').slice(-4);
   }
 
+  // Старая оценка «по размеру» — только для legacy-спецификаций
   function difficultyFor(n) {
     return n <= 64 ? 'easy' : (n <= 120 ? 'normal' : 'hard');
+  }
+  // Новая — по измеренной жёсткости (шкала MixMetrics: 4–5 типично)
+  function difficultyFromHardness(h) {
+    return h <= 3.5 ? 'easy' : (h <= 6 ? 'normal' : 'hard');
+  }
+
+  // Рычаги формы для кандидата. Нужны только когда задана жёсткость:
+  // первые два кандидата — «как получится», остальные тянутся к цели.
+  // Что даёт каждый рычаг (измерено): вытянутая плотная форма и слои
+  // «пирамидой» жёстче (7+); рваная лопастная — открытее (2.5–4).
+  // Выводятся из (жёсткость, номер) — поэтому pick однозначно
+  // восстанавливает кандидата.
+  function steer(o, attempt) {
+    if (!(o.hardness > 0) || attempt < 2 || o.method !== 'scratch') return {};
+    const t = (o.hardness - 1) / 9;
+    const j = makeRng((o.seed ^ 0x9e3779b9) + attempt * 131)();
+    const lerp = (a, b, k) => a + (b - a) * k;
+    const ov = {
+      compact: lerp(1.0, 2.8, t),
+      aspect: lerp(1.1, 6, t) * (0.85 + 0.3 * j),
+      gain: lerp(3.8, 1.2, t),
+    };
+    if (t > 0.7) ov.stagger = true;
+    return ov;
+  }
+
+  function buildCandidate(o, attempt, layoutsSource) {
+    let r;
+    if (o.method === 'glyph') {
+      r = genGlyph(o, attempt);
+      if (!r) r = genScratch(o, makeRng((o.seed + Math.imul(attempt, 7919)) >>> 0));
+    } else {
+      const rng = makeRng((o.seed + Math.imul(attempt, 7919)) >>> 0);
+      r = o.method === 'blend' ? genBlend(o, rng, layoutsSource) : genScratch(o, rng, steer(o, attempt));
+    }
+    return { r, fin: finalize(r.positions) };
+  }
+
+  // Прежний алгоритм v31: первый удачный кандидат (для старых сохранений)
+  function pickLegacy(o, layoutsSource) {
+    let result = null;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const cand = buildCandidate(o, attempt, layoutsSource);
+      result = cand;
+      if (cand.r.positions.length === o.tiles &&
+          isDismantlableLegacy(cand.fin.positions, makeRng(o.seed + attempt))) break;
+    }
+    return { cand: result, attempt: null, metrics: null };
+  }
+
+  // v40: лучший из CANDIDATES. Правильный кандидат = ровно N фишек и
+  // разбираем до конца; из таких побеждает больший
+  //   качество = красота − 0.15 · |жёсткость − цель|   (цель задана)
+  // Если правильных нет — берём самый близкий по числу фишек.
+  function pickBest(o, layoutsSource) {
+    const attempts = o.pick !== undefined ? [o.pick] : Array.from({ length: CANDIDATES }, (_, i) => i);
+    const symForScore = o.method === 'scratch' ? o.symmetry : 'none';
+    let best = null;
+    let fallback = null;
+    for (const attempt of attempts) {
+      const cand = buildCandidate(o, attempt, layoutsSource);
+      const ps = cand.fin.positions;
+      const closeness = -Math.abs(ps.length - o.tiles);
+      if (!fallback || closeness > fallback.closeness) fallback = { cand, attempt, closeness };
+      if (ps.length !== o.tiles) continue;
+      if (!MixMetrics.dismantlable(ps, makeRng(o.seed + attempt))) continue;
+
+      const beauty = MixMetrics.beauty(ps, symForScore, cand.fin.width, cand.fin.height);
+      let score = beauty.score;
+      if (o.method === 'glyph' && cand.r.fidelity !== undefined) {
+        // у иероглифа главное — узнаваемость, а не гладкость силуэта
+        score = 0.65 * cand.r.fidelity + 0.35 * beauty.parts.ratioScore;
+      }
+      let hard = null;
+      if (o.hardness > 0) {
+        hard = MixMetrics.measure(ps, o.seed + attempt);
+        score -= HARDNESS_WEIGHT * Math.abs(hard.hardness - o.hardness);
+      }
+      if (!best || score > best.score) best = { cand, attempt, score, beauty, hard };
+      // v45: гигантские доски (>200) — берём ПЕРВОГО годного кандидата.
+      // Перебор всех восьмых на 600 фишках стоит десятки секунд
+      // (сращивание дорожает квадратично), а первый валидный так же
+      // детерминирован от seed — доски и сохранения воспроизводимы.
+      // Доски ≤200 считаются как раньше: качество не тронуто.
+      if (best && o.tiles > MAX_TILES) break;
+    }
+    if (!best) {
+      const f = fallback;
+      return { cand: f.cand, attempt: f.attempt, metrics: null };
+    }
+    const hard = best.hard || MixMetrics.measure(best.cand.fin.positions, o.seed + best.attempt);
+    return {
+      cand: best.cand,
+      attempt: best.attempt,
+      metrics: { beauty: best.beauty.score, hardness: hard.hardness, openness: hard.openness },
+    };
   }
 
   function generate(opts, source) {
     const o = normalize(opts);
+    const legacy = o.legacy === true;
     const layoutsSource = source || (typeof Layouts !== 'undefined' ? Layouts.all : []);
 
     // «Сюрприз» решаем один раз — в спецификации хранится уже готовый способ
@@ -497,33 +742,37 @@ const MixGen = (function () {
       o.method = makeRng(o.seed ^ 0x5bd1e995)() < 0.5 ? 'blend' : 'scratch';
     }
     if (o.method === 'blend' && layoutsSource.length < 2) o.method = 'scratch';
+    // v45: на гигантах (>200) сращивание дорожает квадратично (секунды
+    // генерации) — там строим «с нуля». Спецификация остаётся детерминированной.
+    if (o.method === 'blend' && o.tiles > MAX_TILES) o.method = 'scratch';
+    if (o.method === 'glyph' && !o.glyph && !MixGlyph.dailyGlyph(o.seed)) o.method = 'scratch';
 
-    let result = null;
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const rng = makeRng((o.seed + Math.imul(attempt, 7919)) >>> 0);
-      const r = o.method === 'blend' ? genBlend(o, rng, layoutsSource) : genScratch(o, rng);
-      const fin = finalize(r.positions);
-      const cand = { r, fin };
-      result = cand;
-      if (r.positions.length === o.tiles && isDismantlable(fin.positions, makeRng(o.seed + attempt))) break;
-    }
-
-    const { r, fin } = result;
+    const picked = legacy ? pickLegacy(o, layoutsSource) : pickBest(o, layoutsSource);
+    const { r, fin } = picked.cand;
     const count = fin.positions.length;
     const layers = fin.positions.reduce((m, p) => Math.max(m, p.z), 0) + 1;
     const code = codeOf(o.seed);
+    if (!legacy && picked.attempt !== null) o.pick = picked.attempt;
+
+    let name = 'Узор ' + code;
     let description;
     if (o.method === 'blend') {
       description = 'Сращена из «' + r.names[0] + '» и «' + r.names[1] + '»';
+    } else if (o.method === 'glyph') {
+      const text = (r.glyph && r.glyph.text) || '';
+      name = 'Знак ' + text;
+      description = 'Доска в форме знака «' + text + '»' + (layers > 1 ? ', слои — хребтом штрихов' : '');
+      if (!o.glyph && r.glyph) o.glyph = { text: r.glyph.text, w: r.glyph.w, h: r.glyph.h, bits: r.glyph.bits };
     } else {
       description = 'Построена с нуля, ' + SYM_TEXT[o.symmetry] +
-        (o.stagger ? ', слои пирамидой' : '');
+        (fin.positions.some(p => p.x % 1 || p.y % 1) ? ', слои пирамидой' : '');
     }
+    const m = picked.metrics;
     return {
       id: 'mix_gen_' + o.seed,
-      name: 'Узор ' + code,
+      name,
       description,
-      difficulty: difficultyFor(count),
+      difficulty: m ? difficultyFromHardness(m.hardness) : difficultyFor(count),
       icon: '✦',
       tilesCount: count,
       positions: fin.positions,
@@ -533,11 +782,15 @@ const MixGen = (function () {
       isMix: true,
       mixComponents: r.parts,
       mixSpec: o,
+      hardness: m ? m.hardness : null,
+      beauty: m ? Math.round(m.beauty * 100) / 100 : null,
     };
   }
 
   return {
-    generate, normalize, validate, isDismantlable, makeRng, randomSeed,
-    MIN_TILES, MAX_TILES, DEFAULT_TILES, MAX_LAYERS, METHODS, SYMMETRIES, DEFAULTS,
+    generate, normalize, validate, makeRng, randomSeed,
+    isDismantlable: (ps, rng) => MixMetrics.dismantlable(ps, rng),
+    MIN_TILES, MAX_TILES, MAX_TILES_BIG, DEFAULT_TILES, MAX_LAYERS, METHODS, SYMMETRIES, DEFAULTS,
+    CANDIDATES, VERSION,
   };
 })();

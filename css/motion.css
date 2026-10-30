@@ -1,0 +1,824 @@
+/* ============================================================
+   MOTION.CSS — Пакет анимаций v44 «Шёлк»
+   Те же эффекты, что в v42/v43, но движение собрано заново:
+   без перебивания поз, без рывков на стыках, с настройками.
+
+   Что изменилось к v44 (главное — архитектура позы фишки):
+     1. Поза фишки = translate + scale + rotate (три независимых
+        свойства вместо одного transform). hover, выбор, наклон матча,
+        покачивание и дыхание подсказки больше не затирают друг друга.
+     2. Выбор фишки — не keyframes, а обычный transition с пружиной
+        (linear() с перелётом ~10%): его можно прервать в любую
+        миллисекунду (быстрые клики, hover → выбор) — фишка плавно
+        перенацелится из текущей позы, без скачка.
+     3. «Нажатие» (:active, 80 мс): отклик в первом же кадре.
+     4. Кадр 0% в keyframes не пишем: анимация стартует из текущей
+        позы. Поэтому --lift-base/--lift-scale и две позы anticipation
+        из v43 больше не нужны (.matching → .removing держат одну позу).
+     5. Раздача: фильтры из кадров убраны (140 фильтров = рывки),
+        проявление отдельной анимацией, раздача стартует ПОСЛЕ
+        открытия экрана (раньше первые ~300 мс волны шли за шторкой).
+     6. Разлёт перемешивания гаснет в конце, а не «мигает» при
+        пересборке доски; стол толкается вниз, а не качается.
+     7. Новое: «пробуждение» открывшейся фишки, возврат при отмене
+        хода, плавный переход экранов («Плавно»), каскад кнопок меню.
+     8. Настройки (js/motion.js): общий выключатель и 7 категорий —
+        атрибуты html[data-anim], html[data-fx-*], html[data-tr].
+
+   Содержание:
+     0. Кривые
+     1. Смена экранов: занавес + плавный переход
+     2. (бывший squash) Выбор фишки — теперь transition в tiles.css
+     3. Матч: кольцо-вспышка (поза и растворение — в tiles.css)
+     4. Подсказка: прорисовка линии + дыхание навстречу
+     5. Перемешивание: разлёт фишек
+     6. Комбо ×4+: один плавный вдох виньетки
+     7. Медальон: импульс на 25/50/75/100%
+     8. Победа: дождь из мини-фишек мастей
+     9. Ачивка: тост-штамп
+    10. Новое v44: пробуждение, возврат, каскад меню
+    11. Выключатели категорий и общий «Анимации: выкл»
+    12. Лёгкий режим
+   ============================================================ */
+
+/* ---------- 0. Кривые (характер движения) ---------- */
+:root {
+  /* пружинка с МЯГКИМ перелётом (1.24): живо, но не дребезжит (для keyframes) */
+  --ease-pop:     cubic-bezier(0.3, 1.24, 0.46, 1);
+  --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);     /* быстрый старт, мягкий приезд */
+  --ease-in-out:  cubic-bezier(0.65, 0, 0.35, 1);    /* симметричная: шторки, повороты */
+  --ease-in:      cubic-bezier(0.5, 0, 0.75, 0.4);   /* разгон: падение дождя */
+  --ease-soft:    cubic-bezier(0.25, 0.8, 0.3, 1);   /* тени и свечения: догоняют, не рвут */
+  /* v44: пружина позы фишки — запасной вариант для браузеров без linear() */
+  --ease-spring:  cubic-bezier(0.3, 1.2, 0.5, 1);
+  --t-pose: 0.42s;
+  /* v44 «люкс»: два семейства кривых на весь интерфейс.
+     lux    — появление/въезд: быстрый старт, очень долгое мягкое затухание,
+              без перелёта (дорогое «шёлковое» движение);
+     settle — «посадка» карточек и значков: перелёт всего ~8%, а не 40–56%
+              как было (отскоки читались как игрушечные). */
+  --ease-lux:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-settle: cubic-bezier(0.25, 1.08, 0.4, 1);
+}
+/* Настоящая пружина (затухающий осциллятор, ζ≈0.58): перелёт ~10%,
+   полностью оседает к концу. Chrome 113+, Safari 17.2+, Firefox 112+. */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: linear(0, 0.071, 0.239, 0.443, 0.644, 0.816, 0.947, 1.035, 1.085, 1.105, 1.104, 1.089, 1.068, 1.046, 1.026, 1.011, 0.999, 0.993, 0.989, 0.989, 0.99, 0.992, 0.994, 0.996, 0.998, 1, 1.001, 1.001, 1);
+    --t-pose: 0.5s;
+  }
+}
+
+/* ============================================================
+   1. ЗАНАВЕС — смена экранов
+   Две лаковые панели сходятся к центру (scaleY), экран
+   переключается под ними, панели расходятся. Тёмно-красный лак
+   с золотой кромкой — как крышка шкатулки.
+   v43: 300 мс закрытие / 380 мс открытие (вместо 190/270) —
+   тяжёлая ткань не хлопает. Печать 福 пришлёпывается к моменту
+   полного закрытия и тает ПО МЕРЕ открытия — больше не мигает.
+   Тайминги JS: app/core.js CURTAIN_CLOSE_MS / CURTAIN_OPEN_MS.
+   ============================================================ */
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;           /* над экранами (z=1), тостами (2000) и оверлеями (1000) */
+  display: none;
+  pointer-events: none;
+}
+/* Пока шторка движется — она ловит клики: двойной переход невозможен */
+.curtain.curtain-close,
+.curtain.curtain-open {
+  display: block;
+  pointer-events: auto;
+}
+.curtain-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50.25%;          /* чуть внахлёст, чтобы в центре не мигала щель */
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0) 18%,
+      rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(170deg, #8e1622 0%, #6e0f1a 55%, #4d0a12 100%);
+  transform: scaleY(0);
+  will-change: transform;
+}
+/* Золотая кромка с внутренней стороны каждой панели */
+.curtain-top {
+  top: 0;
+  transform-origin: top;
+  border-bottom: 2px solid var(--accent-gold, #d4a955);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35), 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+.curtain-bottom {
+  bottom: 0;
+  transform-origin: bottom;
+  border-top: 2px solid var(--accent-gold, #d4a955);
+  box-shadow: 0 -4px 0 rgba(0, 0, 0, 0.35), 0 -10px 24px rgba(0, 0, 0, 0.5);
+}
+/* Декоративная печать по центру стыка — видна в момент «щелчка затвора» */
+.curtain::after {
+  content: '福';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 74px;
+  height: 74px;
+  margin: -37px 0 0 -37px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-weight: 900;
+  font-size: 44px;
+  color: var(--accent-gold-bright, #f0c878);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.16), transparent 60%),
+    #8e1622;
+  border: 2px solid var(--accent-gold, #d4a955);
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: rotate(-4deg) scale(1);
+  pointer-events: none;
+}
+/* Печать доезжает ПОКА шторка ещё закрывается (успевает до смены
+   экрана), а растворяется уже на классе curtain-open — стык
+   opacity 1 → 1 бесшовный. */
+.curtain.curtain-close::after {
+  animation: curtain-seal-in 0.26s var(--ease-out) 0.02s forwards;
+}
+.curtain.curtain-open::after {
+  animation: curtain-seal-out 0.32s ease forwards;
+}
+.curtain.curtain-close .curtain-panel {
+  animation: curtain-close 0.3s var(--ease-in-out) forwards;
+}
+.curtain.curtain-open .curtain-panel {
+  /* панели уже закрыты: анимация расходования */
+  animation: curtain-open 0.38s var(--ease-in-out) forwards;
+}
+@keyframes curtain-close {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes curtain-open {
+  from { transform: scaleY(1); }
+  to   { transform: scaleY(0); }
+}
+@keyframes curtain-seal-in {
+  from { opacity: 0; transform: rotate(-6deg) scale(0.74); }
+  to   { opacity: 1; transform: rotate(-4deg) scale(1); }
+}
+@keyframes curtain-seal-out {
+  from { opacity: 1; transform: rotate(-4deg) scale(1); }
+  to   { opacity: 0; transform: rotate(-3deg) scale(1.05); }
+}
+
+/* ============================================================
+   2. ВЫБОР ФИШКИ — переехал в tiles.css (v44)
+   Раньше здесь был keyframes tile-squash (прожим → вспрыгивание),
+   стартовавший из нулевой позы: фишка под курсором (hover, −4px)
+   за один кадр «проваливалась» на 0 и через 260 мс щёлкала обратно
+   на −4px — два рывка на каждый выбор. Теперь выбор = пружинный
+   transition (translate/scale), а «прожим» даёт :active.
+   ============================================================ */
+
+/* ============================================================
+   3. МАТЧ: КОЛЬЦО-ВСПЫШКА
+   Поза (.matching → .removing) и растворение — в tiles.css.
+   Здесь — тонкое золотое кольцо в точке матча: мягко проявляется,
+   раскрывается 0.5 → 1.5 и тает. Ставит Render.spawnMatchRing.
+   ============================================================ */
+.match-ring {
+  position: absolute;
+  width: calc(var(--tile-w, 56px) * 1.15);
+  height: calc(var(--tile-w, 56px) * 1.15);
+  margin: calc(var(--tile-w, 56px) * -0.575) 0 0 calc(var(--tile-w, 56px) * -0.575);
+  border: 2px solid var(--accent-gold-bright, #f0c878);
+  border-radius: 50%;
+  box-shadow:
+    0 0 12px var(--accent-gold-soft, rgba(232, 184, 75, 0.5)),
+    inset 0 0 8px var(--accent-gold-soft, rgba(232, 184, 75, 0.35));
+  pointer-events: none;
+  z-index: 10000;
+  scale: 0.5;
+  opacity: 0;
+  animation: match-ring-pop 0.6s var(--ease-out) forwards;
+}
+@keyframes match-ring-pop {
+  0%   { scale: 0.5; opacity: 0; }
+  22%  { opacity: 0.9; }
+  100% { scale: 1.55; opacity: 0; }
+}
+
+/* ============================================================
+   4. ПОДСКАЗКА: прорисовка линии + дыхание навстречу
+   4а. .hint-link-draw — сплошная линия «прорисовывается» от
+       первой фишки ко второй (stroke-dashoffset = длина → 0),
+       затем мягко гаснет, оставляя бегущий пунктир.
+   4б. Дыхание: фишки мягко тянутся друг к другу (--pair-dx/
+       --pair-dy — вектор к партнёру, ставит Render.flashPair;
+       вторая фишка в противофазе через animation-delay).
+       v44: translate/scale (композитор), свечение статичное.
+   ============================================================ */
+.hint-link-draw {
+  stroke: var(--accent-gold-bright, #f0c878);
+  stroke-linecap: round;
+  stroke-dasharray: var(--draw-len, 300);
+  stroke-dashoffset: var(--draw-len, 300);
+  animation: hint-draw 0.42s var(--ease-out) forwards,
+             hint-draw-fade 0.5s ease 0.6s forwards;
+}
+@keyframes hint-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes hint-draw-fade {
+  to { opacity: 0; }
+}
+.tile.hint-bold,
+.tile.hint-max {
+  z-index: 9998 !important;
+  outline: max(4px, calc(var(--tile-w, 56px) * 0.08)) solid #fff;
+  outline-offset: 2px;
+  /* Свечение живёт на классе и НЕ мигает — пульс даёт движение */
+  box-shadow:
+    0 0 0 7px var(--tile-hint-glow),
+    0 0 34px 10px var(--tile-hint-glow-soft);
+  animation: hint-breathe 1.7s ease-in-out 3;   /* V4: 3 вдоха и покой (свечение остаётся статичным) */
+}
+.tile.hint-pair-b {
+  animation-delay: -0.85s; /* противофаза: тянутся ПО ОЧЕРЕДИ */
+}
+@keyframes hint-breathe {
+  0%, 100% {
+    translate: 0 -2px;
+    scale: 1;
+  }
+  50% {
+    translate: calc(var(--pair-dx, 0px) * 0.2) calc(var(--pair-dy, 0px) * 0.2 - 3px);
+    scale: 1.03;
+  }
+}
+/* «Двойники» выбранной фишки (match-cand): пунктир статичный, дышит поза */
+.tile.match-cand {
+  /* V4: без бесконечной пульсации — двойники выбранной помечены статично
+     (пунктир из highlight.css) + один мягкий «вдох» при появлении */
+  animation: cand-pulse 0.9s ease-out 1;
+}
+@keyframes cand-pulse {
+  40% { scale: 1.025; filter: brightness(1.08); }
+}
+
+/* ============================================================
+   5. ПЕРЕМЕШИВАНИЕ: разлёт фишек
+   Фишки взметаются на 18–32px (--sc-dx/--sc-dy и лёгкий --sc-rot
+   ставит Render.scatterTiles) и ГАСНУТ к концу разлёта — доска
+   пересобирается из пустоты, без «мигания» в момент замены.
+   Стол при этом получает один вертикальный толчок (game.css).
+   ============================================================ */
+.tile.scatter {
+  animation: tile-scatter 0.4s var(--ease-out) forwards;
+  pointer-events: none;
+}
+@keyframes tile-scatter {
+  0%  { opacity: var(--tile-blocked-alpha, 1); }
+  55% { opacity: var(--tile-blocked-alpha, 1); }
+  100% {
+    translate: var(--sc-dx, 0px) var(--sc-dy, 0px);
+    rotate: var(--sc-rot, 0deg);
+    scale: 0.94;
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   6. КОМБО — обратная связь только у самой пары (V4)
+   Виньетки по краям экрана больше нет: периферийные вспышки утомляли.
+   Серия показана тремя ЛОКАЛЬНЫМИ сигналами: «Комбо ×N» над парой,
+   искры/второе кольцо у пары и полоска под счётом (раздел 10е).
+   ============================================================ */
+
+/* ============================================================
+   7. МЕДАЛЬОН — прогресс БЕЗ движения (V4)
+   Не вращается и не вспыхивает. Яркость медленно проявляется вместе с
+   долей собранных пар (Render.setProgress → --med-progress 0…1):
+   от 85% до 112% базовой непрозрачности за всю партию.
+   ============================================================ */
+.table-medallion {
+  opacity: calc(var(--medallion-opacity, 0.3) * (0.85 + 0.27 * var(--med-progress, 0)));
+  transition: opacity 2.5s ease;
+}
+
+/* ============================================================
+   8. ПОБЕДА: дождь из мини-фишек мастей
+   Ставит App.launchWinRain (app/win.js). Каждый .win-drop —
+   мини-фишка: падает сверху с вращением, у каждой своя
+   длительность (--rf), задержка (--rd), поворот (--rr) и
+   горизонтальный снос (--rdx).
+   ============================================================ */
+.win-rain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+.win-drop {
+  position: absolute;
+  top: -8vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--rd-size, 26px) * 0.72);
+  height: var(--rd-size, 26px);
+  border-radius: 4px;
+  background: linear-gradient(160deg, #fdf8ea 0%, #f0e6cc 70%, #e4d6b4 100%);
+  border: 1px solid rgba(120, 90, 50, 0.45);
+  box-shadow:
+    0 2px 0 rgba(120, 90, 50, 0.35),
+    0 5px 10px rgba(0, 0, 0, 0.25);
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-weight: 900;
+  font-size: calc(var(--rd-size, 26px) * 0.52);
+  color: var(--rd-ink, #1a1a1a);
+  animation: win-drop-fall var(--rf, 3.2s) var(--ease-in) var(--rd, 0s) forwards;
+  opacity: 0;
+}
+@keyframes win-drop-fall {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(var(--rdx, 0px), 118vh) rotate(var(--rr, 540deg));
+    opacity: 0.9;
+  }
+}
+
+/* ============================================================
+   9. АЧИВКА: тост-штамп
+   Красная печать мягко «пришлёпывается»: доезжает с лёгким
+   наклоном и дожимается до места. Без дребезга rotate.
+   Ставит App.toast(msg, { stamp: true }).
+   ============================================================ */
+.toast.toast-stamp {
+  border-left: 4px solid #a01a26;
+  animation: stamp-in 0.5s var(--ease-out);
+}
+@keyframes stamp-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.18) rotate(-2.5deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -4%) scale(0.985) rotate(0.4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* ============================================================
+   10. НОВОЕ v44
+   10а. «Пробуждение»: фишка, которая только что стала свободной,
+        коротко вспыхивает и «встаёт» — глаз видит, ЧТО открылось.
+        (Render.highlightFree; только если подсветка свободных включена —
+        иначе анимация выдавала бы информацию, которую игрок скрыл.)
+   10б. Возврат при отмене хода: две вернувшиеся фишки падают сверху
+        одни, остальная доска не перерисовывается заново.
+   10г. Плавный переход экранов (стиль «Плавно»).
+   ============================================================ */
+.tile.wake {
+  animation: tile-wake 0.9s var(--ease-out);
+}
+@keyframes tile-wake {
+  0% {
+    scale: 1.02;
+    filter: brightness(1.12) saturate(1.06);
+  }
+  /* 100%: естественная поза и яркость */
+}
+
+.tile.returning {
+  animation:
+    tile-return 0.55s var(--ease-out) both,
+    tile-deal-fade 0.22s ease-out both;
+  z-index: 9996 !important;
+}
+@keyframes tile-return {
+  0% {
+    translate: 0 calc(var(--tile-h, 78px) * -0.75);
+    scale: 1.14;
+    rotate: var(--deal-rot, 0deg);
+  }
+}
+
+/* Каскад плиток меню уже есть в menu.css (tile-stand) — не дублируем. */
+
+/* Плавный переход: уходящий экран мягко растворяется (160 мс),
+   новый въезжает штатным screen-in (base.css). Пока экран уходит,
+   клики по нему не проходят (body.is-switching). */
+.screen.screen-leaving {
+  animation: screen-out 0.16s ease-in forwards;
+}
+@keyframes screen-out {
+  to { opacity: 0; translate: 0 -6px; scale: 0.994; }
+}
+body.is-switching .screen { pointer-events: none; }
+
+/* ============================================================
+   10д. ПОЛИРОВКА v44 — «полный марафет»
+   Мелкие отклики интерфейса. Все — на translate/scale/rotate/opacity
+   (композитор), поэтому не конфликтуют с transform-ховерами.
+   ============================================================ */
+
+/* «Нажатие» кнопок и карточек: мгновенно вдавливаются, отпускание — пружиной */
+.btn:active,
+.mix-card:active { scale: 0.972; }
+.btn,
+.mix-card {
+  transition-property: transform, background, border-color, box-shadow, scale;
+  transition-duration: 0.15s, 0.2s, 0.2s, 0.2s, 0.2s;
+}
+.btn-action:active,
+.btn-icon-only:active { scale: 0.9; }
+
+/* Выбранная карточка (режим графики, пресет, переход…) — короткий «щелчок» */
+.mix-card.active { animation: card-select 0.42s var(--ease-pop); }
+@keyframes card-select {
+  0%   { scale: 0.96; }
+  100% { scale: 1; }
+}
+
+/* Тумблер: ползунок едет по пружине и «тянется» под пальцем */
+.toggle-switch::after {
+  transition: transform 0.38s var(--ease-spring), width 0.15s ease, box-shadow 0.2s;
+}
+.toggle-row:active .toggle-switch::after { width: 26px; }
+.toggle-row:active .toggle:checked + .toggle-switch::after { transform: translateX(16px); }
+
+/* Экран настроек: блоки въезжают каскадом */
+#screen-settings.active .setting-group {
+  animation: group-rise 0.5s var(--ease-out) backwards;
+}
+#screen-settings.active .setting-group:nth-of-type(1) { animation-delay: 0.05s; }
+#screen-settings.active .setting-group:nth-of-type(2) { animation-delay: 0.10s; }
+#screen-settings.active .setting-group:nth-of-type(3) { animation-delay: 0.15s; }
+#screen-settings.active .setting-group:nth-of-type(4) { animation-delay: 0.20s; }
+#screen-settings.active .setting-group:nth-of-type(5) { animation-delay: 0.25s; }
+#screen-settings.active .setting-group:nth-of-type(n+6) { animation-delay: 0.30s; }
+@keyframes group-rise {
+  from { opacity: 0; translate: 0 16px; }
+}
+
+/* Экран игры: шапка опускается сверху, планки показаний выезжают следом */
+#screen-game.active .game-header { animation: header-drop 0.55s var(--ease-out) 0.05s backwards; }
+#screen-game.active .game-info   { animation: header-drop 0.6s var(--ease-out) 0.18s backwards; }
+@keyframes header-drop {
+  from { opacity: 0; translate: 0 -14px; }
+}
+
+/* Иконки кнопок действий (App.pulseButton) */
+.btn-action.pulse-undo svg   { animation: icon-undo 0.7s var(--ease-lux); }
+.btn-action.pulse-shuffle svg { animation: icon-shuffle 0.7s var(--ease-lux); }
+.btn-action.pulse-hint svg   { animation: icon-hint 0.9s ease-out; }
+@keyframes icon-undo {
+  from { rotate: 0deg; }
+  to   { rotate: -240deg; }
+}
+@keyframes icon-shuffle {
+  0%   { rotate: 0deg; scale: 1; }
+  50%  { scale: 1.12; }
+  100% { rotate: 180deg; scale: 1; }
+}
+@keyframes icon-hint {
+  0%   { filter: drop-shadow(0 0 0 transparent); scale: 1; }
+  30%  { filter: drop-shadow(0 0 6px var(--accent-gold-bright, #f0c878)); scale: 1.12; }
+  100% { filter: drop-shadow(0 0 0 transparent); scale: 1; }
+}
+
+/* Отказ: выбранная фишка, к которой не подошла новая, «качает головой».
+   Только rotate — поза подъёма (translate) остаётся нетронутой. */
+.tile.reject { animation: tile-reject 0.4s var(--ease-out); }
+@keyframes tile-reject {
+  0%, 100% { rotate: 0deg; }
+  18% { rotate: -2.2deg; }
+  42% { rotate: 1.8deg; }
+  64% { rotate: -1deg; }
+  82% { rotate: 0.4deg; }
+}
+
+/* ============================================================
+   10е. ИНТЕРФЕЙС, КОТОРЫЙ ОБЪЯСНЯЕТ (v44)
+   Анимации-подсказки: каждая отвечает на вопрос игрока.
+     «Куда пошли мои очки?»       → +N летит в табло, табло вспыхивает
+     «Сколько у меня на серию?»   → полоска под счётом сгорает за окно комбо
+     «Это всё? Почти конец?»      → сукно темнеет, доска дышит
+     «Что это было?»              → плашка «Ходов нет» перед перемешиванием
+     «Не подсмотреть на паузе»    → фишки переворачиваются рубашкой вверх
+   ============================================================ */
+
+/* ---- +N летит в счёт (Render.spawnScoreFloat, класс .to-score) ---- */
+.score-float.to-score {
+  animation: score-fly 1s linear forwards;
+}
+@keyframes score-fly {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.7);
+         animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  16%  { opacity: 1; transform: translate(-50%, -75%) scale(1.08);
+         animation-timing-function: ease-in-out; }
+  34%  { opacity: 1; transform: translate(-50%, -88%) scale(1.06);
+         animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.4); }   /* разгон к табло */
+  90%  { opacity: 1; }
+  100% { opacity: 0;
+         transform: translate(calc(-50% + var(--fly-x, 0px)), calc(-88% + var(--fly-y, 0px))) scale(0.5); }
+}
+/* Табло принимает очки: короткая золотая вспышка + «толчок» */
+.info-block.score-hit .info-value { animation: score-hit 1.1s ease-out; }
+/* V4: вместо вспышки панели (жёлтое свечение сбоку при каждой паре) —
+   цифры на миг светлеют и возвращаются: локально, без свечения */
+@keyframes score-hit {
+  0%   { color: var(--accent-gold-bright, #f0c878); }
+}
+
+/* ---- Индикатор серии (App: syncComboMeter) ---- */
+.info-block { position: relative; }
+.combo-meter {
+  /* накрывает весь блок счёта, сама ничего не рисует: полоска — у нижнего
+     края, метка «×N» — в верхнем правом углу (не поверх числа) */
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.combo-meter[hidden] { display: none; }
+.combo-meter .cm-bar {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 2px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-gold, #e8b84b), var(--accent-gold-bright, #f0c878));
+  transform-origin: left center;
+  scale: 0 1;
+}
+.combo-meter.run .cm-bar {
+  animation: cm-drain var(--cm-dur, 5000ms) linear var(--cm-skip, 0ms) forwards;
+}
+.combo-meter.hot .cm-bar {
+  background: linear-gradient(90deg, #e59a43, #f4cf7a);
+}
+.combo-meter::after {
+  content: attr(data-combo);
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-gold-bright, #f0c878);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+@keyframes cm-drain {
+  from { scale: 1 1; opacity: 1; }
+  80%  { opacity: 1; }
+  to   { scale: 0 1; opacity: 0.4; }
+}
+
+/* ---- Финал партии: спокойный сигнал в интерфейсе (V4) ----
+   ≤3 пар до победы счётчик пар теплеет до золотого и остаётся таким.
+   Никакой тени по краям и пульсаций — это событие нужно ЗАМЕТИТЬ, а не
+   пережить всем телом. */
+#game-pairs { transition: color 1.2s ease; }
+#screen-game[data-tension="1"] #game-pairs,
+#screen-game[data-tension="2"] #game-pairs { color: var(--accent-gold-bright, #f0c878); }
+
+/* ---- Тупик: плашка «Ходов нет» ---- */
+.deadend-banner {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  z-index: 60;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 30px;
+  border-radius: 14px;
+  background: rgba(14, 9, 6, 0.82);
+  border: 1px solid var(--accent-gold, #e8b84b);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 0 26px var(--accent-gold-soft, rgba(232, 184, 75, 0.4));
+  color: var(--text-primary, #fff4dc);
+  text-align: center;
+  pointer-events: none;
+  animation: deadend-in 0.5s var(--ease-lux) backwards;
+}
+.deadend-banner strong {
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-gold-bright, #f0c878);
+}
+.deadend-banner span { font-size: 0.85rem; opacity: 0.8; }
+.deadend-banner.out { animation: deadend-out 0.36s ease-in forwards; }
+@keyframes deadend-in {
+  from { opacity: 0; scale: 0.85; translate: -50% -40%; }
+}
+@keyframes deadend-out {
+  to { opacity: 0; scale: 1.08; translate: -50% -60%; }
+}
+
+/* ---- Пауза: рубашки ---- */
+.tile-back {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(240, 200, 120, 0.9) 0 11%, rgba(240, 200, 120, 0.25) 12% 22%, transparent 23%),
+    repeating-linear-gradient(45deg, rgba(240, 200, 120, 0.12) 0 2px, transparent 2px 7px),
+    linear-gradient(150deg, #1f6b53, #0f3d2e);
+  box-shadow: inset 0 0 0 2px rgba(240, 200, 120, 0.55), inset 0 0 0 5px rgba(0, 0, 0, 0.25);
+}
+.board.is-paused .tile-back { opacity: 1; }
+.board.is-paused .tile { pointer-events: none; }
+.board.pausing .tile,
+.board.unpausing .tile { animation: tile-flip 0.46s var(--ease-in-out) var(--flip-delay, 0ms) both; }
+.board.pausing .tile-back   { animation: back-show 0.46s step-end var(--flip-delay, 0ms) both; }
+.board.unpausing .tile-back { animation: back-hide 0.46s step-end var(--flip-delay, 0ms) both; }
+@keyframes tile-flip {
+  50% { scale: 0 1; }
+}
+@keyframes back-show {
+  0%, 49% { opacity: 0; }
+  50%, 100% { opacity: 1; }
+}
+@keyframes back-hide {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+/* Пауза показывает доску рубашками — размытие и тёмная вуаль не нужны */
+#pause-overlay {
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ---- Карточка раскладки → доска ---- */
+.launch-ghost {
+  position: fixed;
+  z-index: 3000;
+  border-radius: 14px;
+  pointer-events: none;
+  background: linear-gradient(150deg, #1f6b53, #0f3d2e);
+  box-shadow: 0 0 0 2px var(--accent-gold, #e8b84b), 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: launch-ghost 0.62s var(--ease-in-out) forwards;
+}
+@keyframes launch-ghost {
+  0%   { opacity: 0.95; translate: 0 0; scale: 1 1; }
+  70%  { opacity: 0.85; }
+  100% { opacity: 0; translate: var(--lg-dx, 0px) var(--lg-dy, 0px); scale: var(--lg-sx, 1) var(--lg-sy, 1); }
+}
+
+/* ---- Смена темы/скина: кросс-фейд View Transitions ---- */
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.45s; animation-timing-function: var(--ease-in-out); }
+
+/* ============================================================
+   11. ВЫКЛЮЧАТЕЛИ (js/motion.js ставит атрибуты на <html>)
+   Категория выключена → её анимации не играют, а состояние
+   (подсветка, поза, кольца) остаётся статичным и читаемым.
+   Общий «Анимации: выкл» гасит ВСЁ, включая переходы интерфейса —
+   как prefers-reduced-motion. Конец анимаций при этом наступает
+   мгновенно, а не «никогда», поэтому animationend срабатывает и
+   классы (.enter, .removing…) убираются сами.
+   ============================================================ */
+html[data-anim="off"] *,
+html[data-anim="off"] *::before,
+html[data-anim="off"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* раздача */
+html[data-fx-deal="off"] .launch-ghost { display: none; }
+html[data-fx-deal="off"] .board.pausing .tile,
+html[data-fx-deal="off"] .board.unpausing .tile { animation: none; }
+html[data-fx-deal="off"] .tile.enter { animation: none; }
+html[data-fx-deal="off"] .tile.returning { animation: none; }
+
+/* выбор и наведение: поза меняется, но мгновенно (тени/свет — как были) */
+html[data-fx-select="off"] .tile {
+  transition:
+    box-shadow 0.15s ease,
+    opacity 0.15s ease,
+    filter 0.15s ease;
+}
+html[data-fx-select="off"] .tile.wake,
+html[data-fx-select="off"] .tile.match-cand { animation: none; }
+html[data-fx-select="off"] .tile-halo,
+html[data-fx-select="off"] .tile.selected > .tile-halo { animation: none; }
+html[data-fx-select="off"] .tile.free:hover { transform: none; }
+html[data-fx-select="off"] .tile.shake,
+html[data-fx-select="off"] .tile.reject { animation: none; }
+html[data-fx-select="off"] .tile.free:hover::after,
+html[data-fx-select="off"] .tile.selected::after { transition: opacity 0.25s ease; }
+html[data-fx-select="off"] .btn-action.pulse-undo svg,
+html[data-fx-select="off"] .btn-action.pulse-shuffle svg { animation: none; }
+html[data-fx-select="off"] .tile.free:active { translate: 0 calc(var(--tile-hover-lift, 4px) * -1); scale: 1.012; }
+
+html[data-fx-match="off"] .info-block.score-hit .info-value { animation: none; }
+
+/* эффекты пары: фишка просто исчезает (JS ставит .removed сразу) */
+html[data-fx-match="off"] .tile.matching,
+html[data-fx-match="off"] .tile.removing { transition: none; animation: none; }
+html[data-fx-match="off"] .match-ring,
+html[data-fx-match="off"] .match-spark,
+html[data-fx-match="off"] .score-float,
+html[data-fx-match="off"] .combo-float { display: none; }
+
+/* подсказки: подсветка остаётся, движения нет */
+html[data-fx-hint="off"] .tile.hint,
+html[data-fx-hint="off"] .tile.hint-bold,
+html[data-fx-hint="off"] .tile.hint-max,
+html[data-fx-hint="off"] .tile.hint-pair-b { animation: none; }
+html[data-fx-hint="off"] .hint-link-draw { animation: none; stroke-dashoffset: 0; opacity: 0; }
+html[data-fx-hint="off"] .hint-link-line { animation: none; }
+html[data-fx-hint="off"] .btn-action.pulse-hint svg { animation: none; }
+
+/* приближение стола: размер фишек меняется шагом (JS не запускает анимацию) */
+html[data-fx-camera="off"] #board { animation: none; }
+
+/* перемешивание */
+html[data-fx-shuffle="off"] .tile.scatter { animation: none; }
+html[data-fx-shuffle="off"] .deadend-banner { display: none; }
+html[data-fx-shuffle="off"] .board-table.table-shake { animation: none; }
+
+/* праздник */
+html[data-fx-celebrate="off"] .combo-meter { display: none; }
+/* фон стола — «Живой фон»: проявление медальона */
+html[data-fx-ambient="off"] .table-medallion { transition: none; }
+html[data-fx-celebrate="off"] .win-rain,
+html[data-fx-celebrate="off"] .burst-particle { display: none; }
+html[data-fx-celebrate="off"] .toast.toast-stamp { animation: none; }
+
+/* живой фон меню */
+html[data-fx-ambient="off"] .menu-dust { display: none; }
+html[data-fx-ambient="off"] .dust-mote,
+html[data-fx-ambient="off"] .menu-decor-cloud,
+html[data-fx-ambient="off"] .menu-lantern,
+html[data-fx-ambient="off"] .win-glow,
+html[data-fx-ambient="off"] .tut-spark { animation: none; }
+
+/* переход «Мгновенно»/«Плавно» — занавес не нужен */
+html[data-tr="fade"] .curtain,
+html[data-tr="none"] .curtain { display: none !important; }
+html[data-tr="none"] .screen.active { animation: none; }
+
+/* ============================================================
+   12. ЛЁГКИЙ РЕЖИМ (html[data-perf="lite"])
+   Анимации дешёвые, но кое-что всё же гасим: блеск занавеса,
+   пульс виньетки, «дыхание» подсказки, прорисовку линии, ауру
+   выбора. Дождь победы и разлёт не запускаются (проверка в JS).
+   ============================================================ */
+html[data-perf="lite"] .curtain::after { display: none; }
+html[data-perf="lite"] .curtain-panel {
+  background: #5c0e17;
+  box-shadow: none;
+}
+html[data-perf="lite"] .tile.hint-bold,
+html[data-perf="lite"] .tile.hint-max,
+html[data-perf="lite"] .tile.hint-pair-b { animation: hint-bold-lite 0.9s ease-in-out 3; }
+@keyframes hint-bold-lite {
+  0%, 100% { translate: 0 -2px; }
+  50%      { translate: 0 -6px; }
+}
+html[data-perf="lite"] .hint-link-draw { animation: none; stroke-dashoffset: 0; opacity: 0; }
+html[data-perf="lite"] .tile.matching,
+html[data-perf="lite"] .tile.wake,
+html[data-perf="lite"] .tile.match-cand { animation: none; }
+html[data-perf="lite"] .tile-halo { display: none; }
+html[data-perf="lite"] .tile.free:hover { transform: none; }
+html[data-perf="lite"] .board.pausing .tile,
+html[data-perf="lite"] .board.unpausing .tile { animation: none; }
+html[data-perf="lite"] .tile::after { background-size: 100% 100%, 0 0; }
+html[data-perf="lite"] .btn-action svg { animation: none !important; }
+html[data-perf="lite"] #screen-settings.active .setting-group,
+html[data-perf="lite"] #screen-game.active .game-header,
+html[data-perf="lite"] #screen-game.active .game-info { animation: none; }
+html[data-perf="lite"] .table-medallion { transition: none; }
+html[data-perf="lite"] .win-drop { animation-duration: 1.8s; }

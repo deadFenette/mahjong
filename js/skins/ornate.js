@@ -18,7 +18,13 @@
      каллиграфический шрифт, доступный в браузере.
    ============================================================ */
 
-const TilesetOrnate = (function () {
+Tileset.register({
+  id: 'ornate',
+  name: 'Богатый',
+  desc: 'Золотая гравировка и орнаменты',
+  order: 20,
+  // Набор строится лениво — при первом обращении (см. tileset.js)
+  create: function () {
 
   // ---------- SVG-обёртка ----------
   function svg(inner, viewBox = '0 0 100 120') {
@@ -491,5 +497,5 @@ const TilesetOrnate = (function () {
     isMatch,
     groups: { dots: dotNames, bamboo: bambooNames, characters: charNames, winds, dragons, flowers: flowerNames, seasons: seasonNames },
   };
-})();
-// Tileset — фасад, выбирается ниже в tileset.js
+  }
+});

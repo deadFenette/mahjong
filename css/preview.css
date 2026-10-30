@@ -19,7 +19,7 @@
   min-height: 0;
   overflow-y: auto;               /* скроллится всё тело, превью «прилипает» */
   display: grid;
-  grid-template-columns: minmax(0, 780px) minmax(370px, 460px);
+  grid-template-columns: minmax(0, 780px) minmax(400px, 480px);
   justify-content: center;
   width: 100%;
 }
@@ -114,15 +114,15 @@
    их читают и tiles.css (грани, тени), и highlight.css (толщина
    рамок: max(3px, --tile-w × 0.06)). */
 .preview-board {
-  --tile-w: 46px;
-  --tile-h: 64px;
+  --tile-w: 50px;
+  --tile-h: 70px;
   --tile-depth: 4px;
   --tile-radius: 7px;
   --tile-face-pad: 4px;
   --tile-blocked-alpha: 1;   /* прозрачность закрытых (слайдер) */
   position: relative;
-  width: 312px;
-  height: 244px;
+  width: 340px;
+  height: 252px;
   margin: 0 auto;
 }
 /* Превью не интерактивно: фишки не кликаются и не ловят hover —
@@ -147,9 +147,10 @@
   background: rgba(8, 5, 3, 0.58);
   border: 1px solid var(--accent-gold-soft);
   color: rgba(255, 244, 220, 0.88);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
+  transform: translateX(-50%);   /* left = центр подписи */
   text-transform: uppercase;
   white-space: nowrap;
   pointer-events: none;
@@ -182,6 +183,15 @@
   font-weight: 600;
   color: var(--accent-gold-bright);
   text-align: right;
+}
+
+/* Невысокий экран (ноутбук 16:9): экранчик «прилипает» и должен
+   целиком помещаться — прячем пояснение и ужимаем легенду */
+@media (min-width: 1181px) and (max-height: 860px) {
+  .preview-note { display: none; }
+  .settings-preview { padding-top: 16px; padding-bottom: 12px; gap: 8px; }
+  .preview-legend { gap: 4px; }
+  .preview-legend-row { padding: 5px 12px; }
 }
 
 /* ---------- Адаптив ---------- */

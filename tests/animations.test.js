@@ -142,3 +142,80 @@ suite('Санитария: константы и экспорт анимаций
     assertGte(maxDelay, 0);
   });
 });
+
+/* ============================================================
+   v42 «Intent»: раздача по ветрам (Восток → Юг → Запад → Север)
+   ============================================================ */
+suite('Раздача по ветрам: dealDelayWindsFor', () => {
+
+  // Центр доски 14×8 — сектора определяются от него
+  const CENTER = { cx: 7, cy: 4 };
+  const noWave = { stepXY: 0, stepZ: 0 }; // убираем волну — остаётся только ветер
+
+  test('функция и сектор экспортированы', () => {
+    assertOk(typeof Render.dealDelayWindsFor === 'function');
+    assertOk(typeof Render.windSectorRank === 'function');
+    assertOk(Render.WIND_STEP_MS > 0);
+  });
+
+  test('сектора разпознаются по сторонам света', () => {
+    // Восток — правый край, Юг — низ, Запад — лево, Север — верх
+    assertEq(Render.windSectorRank(12, 3.5, 7, 4), 0, 'правый край — Восток');
+    assertEq(Render.windSectorRank(7.5, 7, 7, 4), 1, 'низ — Юг');
+    assertEq(Render.windSectorRank(1, 4.5, 7, 4), 2, 'левый край — Запад');
+    assertEq(Render.windSectorRank(6.5, 0, 7, 4), 3, 'верх — Север');
+  });
+
+  test('порядок раздачи: Восток раньше Юга раньше Запада раньше Севера', () => {
+    const e = Render.dealDelayWindsFor({ x: 12, y: 3 }, { ...noWave, ...CENTER });
+    const s = Render.dealDelayWindsFor({ x: 7,  y: 6 }, { ...noWave, ...CENTER });
+    const w = Render.dealDelayWindsFor({ x: 1,  y: 4 }, { ...noWave, ...CENTER });
+    const n = Render.dealDelayWindsFor({ x: 7,  y: 1 }, { ...noWave, ...CENTER });
+    assertOk(e < s && s < w && w < n, `канон В→Ю→З→С нарушен: ${e} ${s} ${w} ${n}`);
+  });
+
+  test('ветер складывается с волной, но не превышает потолок', () => {
+    const d = Render.dealDelayWindsFor(
+      { x: 13, y: 7, z: 5 },
+      { ...CENTER, windStep: 100, maxDelay: 300 }
+    );
+    assertEq(d, 300, 'потолок должен держать суммарную задержку');
+  });
+
+  test('мусорные координаты — базовая задержка без ветра, никакого NaN', () => {
+    const d1 = Render.dealDelayWindsFor(null, CENTER);
+    assertEq(d1, 0);
+    const d2 = Render.dealDelayWindsFor({ x: 'abc', y: NaN }, { ...noWave, ...CENTER });
+    assertEq(d2, 0);
+    assertOk(Number.isFinite(Render.dealDelayWindsFor({ x: Infinity }, CENTER)));
+  });
+
+  test('без указания центра ветер не ломается', () => {
+    const d = Render.dealDelayWindsFor({ x: 3, y: 2, z: 0 });
+    assertOk(Number.isFinite(d) && d >= 0);
+  });
+});
+
+/* ============================================================
+   v42 «Intent»: экспорт новых эффектов
+   ============================================================ */
+suite('Новые эффекты v42: экспорт и константы', () => {
+
+  test('эффекты матча, перемешивания, медальона и комбо экспортированы', () => {
+    assertOk(typeof Render.spawnMatchRing === 'function');
+    assertOk(typeof Render.scatterTiles === 'function');
+    assertOk(typeof Render.pulseMedallion === 'function');
+    assertOk(typeof Render.resetMedallion === 'function');
+    assertOk(typeof Render.comboFeedback === 'function');
+  });
+
+  test('anticipation короткий — не дольше 120 мс (принцип Intent)', () => {
+    assertOk(Render.MATCH_ANTICIPATE_MS > 0 && Render.MATCH_ANTICIPATE_MS <= 200); // v43: 150 мс
+  });
+
+  test('шаги ветряной раздачи положительны и конечны', () => {
+    assertOk(Render.WIND_STEP_MS > 0 && Number.isFinite(Render.WIND_STEP_MS));
+    assertOk(Render.DEAL_WINDS_STEP_XY > 0 && Number.isFinite(Render.DEAL_WINDS_STEP_XY));
+    assertOk(Render.DEAL_WINDS_STEP_Z > 0 && Number.isFinite(Render.DEAL_WINDS_STEP_Z));
+  });
+});

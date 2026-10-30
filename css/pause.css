@@ -31,7 +31,7 @@
   min-width: 300px;
   box-shadow: 0 24px 60px var(--shadow-strong);
   /* v8: карточка паузы выпрыгивает, а не просто проявляется */
-  animation: card-pop 0.32s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+  animation: card-pop 0.32s var(--ease-settle) backwards;
 }
 @keyframes card-pop {
   from { opacity: 0; transform: translateY(14px) scale(0.92); }

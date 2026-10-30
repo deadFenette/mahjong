@@ -3,7 +3,7 @@
    Кэшируем все файлы при первой загрузке
    ============================================================ */
 
-const CACHE_NAME = 'mahjong-v38-preview';
+const CACHE_NAME = 'mahjong-v45-mixbig';
 const ASSETS = [
   './',
   './index.html',
@@ -24,6 +24,8 @@ const ASSETS = [
   './css/highlight.css',
   './css/preview.css',
   './css/menu.css',
+  // v42: пакет анимаций «Intent»
+  './css/motion.css',
   './css/themes.css',
   './css/lite.css',
   './css/fonts.css',
@@ -39,15 +41,20 @@ const ASSETS = [
   './fonts/notosanssc-700.woff2',
   './fonts/zcoolxiaowei.woff2',
   './js/tileset-core.js',
-  './js/tileset-classic.js',
-  './js/tileset-ornate.js',
-  './js/tileset-pictures.js',
-  './js/tileset-clear.js',
   './js/tileset.js',
+  // скины: новый файл js/skins/<id>.js добавляется сюда строкой (тест следит)
+  './js/skins/classic.js',
+  './js/skins/ornate.js',
+  './js/skins/pictures.js',
+  './js/skins/clear.js',
   './js/layouts.js',
+  './js/glyph-data.js',
+  './js/mixmetrics.js',
+  './js/mixglyph.js',
   './js/mixgen.js',
   './js/icons.js',
   './js/perf.js',
+  './js/motion.js',
   // v26-audio: модульные звуковые эффекты — каждый звук в отдельном файле
   './js/sounds/init.js',
   './js/sounds/hover.js',
@@ -62,6 +69,8 @@ const ASSETS = [
   './js/sounds/shuffle.js',
   './js/sounds/deal.js',
   './js/sounds/win.js',
+  // v42: «шлепок печати» достижений
+  './js/sounds/stamp.js',
   './js/sounds/index.js',
   './js/audio.js',
   './js/music.js',
@@ -78,7 +87,9 @@ const ASSETS = [
   './js/app/saves.js',
   './js/app/gallery.js',
   './js/app/settings.js',
+  './js/app/skins.js',
   './js/app/options.js',
+  './js/app/graphics.js',
   './js/app/preview.js',
   './js/app/pause.js',
   './js/app/init.js',

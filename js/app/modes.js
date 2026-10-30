@@ -14,8 +14,8 @@
     Render.fitBoard(layout);
     Render.renderFull();
     A.resetLoupe(); // v34: лупа начинает с чистого листа
-    Render.playDealAnimation(); // v8: каскадная раздача
-    Audio2.deal(); // v26: каскад мягких стуков
+    // v44: раздача и звук — когда экран игры реально показан (после шторки)
+    A.afterScreen('game', () => { Render.playDealAnimation(); Audio2.deal(); });
     Render.highlightFree(Storage.getSetting('highlight', true));
     A.updateGameInfo();
     A.showScreen('game');
@@ -40,8 +40,8 @@
     Render.fitBoard(layout);
     Render.renderFull();
     A.resetLoupe(); // v34: лупа начинает с чистого листа
-    Render.playDealAnimation(); // v8: каскадная раздача
-    Audio2.deal(); // v26: каскад мягких стуков
+    // v44: раздача и звук — когда экран игры реально показан (после шторки)
+    A.afterScreen('game', () => { Render.playDealAnimation(); Audio2.deal(); });
     Render.highlightFree(Storage.getSetting('highlight', true));
     A.updateGameInfo();
     A.showScreen('game');
@@ -60,8 +60,19 @@
     const seed = Game.dailySeedFromDate(new Date());
     // Чётный день → микс, нечётный → обычная раскладка
     const useMix = (seed % 2) === 0;
+    // v40: каждый третий чётный день — «Иероглиф дня» (одинаков у всех:
+    // маска лежит в данных, а не рисуется шрифтом игрока)
+    const useGlyph = useMix && Math.floor(seed / 2) % 3 === 0 && !!MixGlyph.dailyGlyph(seed);
     let layout;
-    if (useMix) {
+    if (useGlyph) {
+      layout = MixGen.generate({
+        seed: seed * 2654435761 % 4294967296 || seed,
+        method: 'glyph',
+        tiles: 120 + (seed % 4) * 12,   // сложным знакам нужно разрешение
+        layers: 2,
+        glyph: MixGlyph.dailyGlyph(seed),
+      });
+    } else if (useMix) {
       // v31: Ежедневный микс — одна новая раскладка из генератора.
       // Размер 72–120 фишек выбирается из seed, поэтому у всех игроков
       // в этот день доска одинаковая (генератор детерминирован).
@@ -85,8 +96,8 @@
     Render.fitBoard(layout);
     Render.renderFull();
     A.resetLoupe(); // v34: лупа начинает с чистого листа
-    Render.playDealAnimation();
-    Audio2.deal(); // v26: каскад мягких стуков
+    // v44: раздача и звук — когда экран игры реально показан (после шторки)
+    A.afterScreen('game', () => { Render.playDealAnimation(); Audio2.deal(); });
     Render.highlightFree(Storage.getSetting('highlight', true));
     A.updateGameInfo();
     A.showScreen('game');
@@ -105,7 +116,7 @@
         `Лучшее: ${todayResult.bestScore} очков, ${timeStr}`
       ), 600);
     } else {
-      const label = useMix ? 'Ежедневный микс: ' : 'Ежедневная раскладка: ';
+      const label = useGlyph ? 'Иероглиф дня: ' : (useMix ? 'Ежедневный микс: ' : 'Ежедневная раскладка: ');
       setTimeout(() => A.toast(label + '«' + layout.name + '»'), 600);
     }
   }

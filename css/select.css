@@ -27,7 +27,7 @@
   overflow: hidden;
   /* v8: каскадное появление карточек (--i ставит App.renderLayoutsGrid).
      fill-mode backwards — чтобы после анимации hover-transform работал */
-  animation: card-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation: card-rise 0.45s var(--ease-lux) backwards;
   animation-delay: calc(var(--i, 0) * 45ms);
 }
 @keyframes card-rise {
@@ -132,7 +132,7 @@
   font-family: inherit;
   color: var(--text-main);
   /* v8: каскад появления карточек сложности (--i в разметке) */
-  animation: card-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation: card-rise 0.45s var(--ease-lux) backwards;
   animation-delay: calc(var(--i, 0) * 70ms + 0.05s);
 }
 .card:hover {

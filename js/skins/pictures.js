@@ -16,7 +16,13 @@
    читается даже на маленькой фишке и при плохом зрении.
    ============================================================ */
 
-const TilesetPictures = (function () {
+Tileset.register({
+  id: 'pictures',
+  name: 'Картинки',
+  desc: 'Фрукты, цветы и зверушки вместо иероглифов',
+  order: 30,
+  // Набор строится лениво — при первом обращении (см. tileset.js)
+  create: function () {
 
   const INK = '#4a3320';
 
@@ -332,4 +338,5 @@ const TilesetPictures = (function () {
   };
   const set = TilesetCore.build(face, NAMES);
   return { tiles: set.tiles, isMatch: set.isMatch, groups: set.groups };
-})();
+  }
+});

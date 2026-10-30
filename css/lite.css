@@ -55,7 +55,7 @@ html[data-perf="lite"] .win-glow { opacity: 0.35; }
 /* ---------- 3. Фишки: тени без размытия, без фильтров ---------- */
 html[data-perf="lite"] .tile {
   filter: none;
-  transition: transform 0.14s ease, opacity 0.2s ease;
+  transition: translate 0.14s ease, scale 0.14s ease, rotate 0.14s ease, opacity 0.2s ease;
   box-shadow:
     0 0 0 1px var(--tile-edge, rgba(0, 0, 0, 0.35)),
     inset 1px 1px 0 var(--tile-highlight),

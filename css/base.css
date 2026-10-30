@@ -78,7 +78,7 @@ body {
 .screen.active {
   display: flex;
   opacity: 1;
-  animation: screen-in 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  animation: screen-in 0.42s var(--ease-lux) backwards;
 }
 @keyframes screen-in {
   from { opacity: 0; transform: translateY(12px) scale(0.996); }
@@ -128,7 +128,7 @@ body[data-screen="settings"] #screen-settings {
 /* v8: пульс значения, когда оно изменилось (ставит App.bumpValue) */
 .info-value.bump,
 .stat-value.bump {
-  animation: value-bump 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: value-bump 0.38s var(--ease-settle);
 }
 @keyframes value-bump {
   0%   { transform: scale(1); }

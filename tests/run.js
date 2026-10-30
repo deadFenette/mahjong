@@ -10,6 +10,7 @@
 
 require('./layouts.test.js');
 require('./tileset.test.js');
+require('./skins-registry.test.js');
 require('./skins.test.js');
 require('./skins-v33.test.js');
 require('./structure.test.js');
@@ -20,6 +21,7 @@ require('./render-math.test.js');
 require('./storage.test.js');
 require('./appearance.test.js');
 require('./animations.test.js');
+require('./motion.test.js');
 require('./improvements.test.js');
 require('./music.test.js');
 require('./audio.test.js');
@@ -31,6 +33,8 @@ require('./deal.test.js');
 require('./menu.test.js');
 require('./daily.test.js');
 require('./mixgen.test.js');
+require('./mixgen40.test.js');
+require('./mixgen45.test.js');
 require('./lite.test.js');
 
 const { report } = require('./runner');

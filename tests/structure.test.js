@@ -103,6 +103,6 @@ suite('Модули CSS: css/*.css', () => {
 suite('Скрипты скинов — зависимости', () => {
   test('tileset-core.js нужен pictures/clear и подключён раньше них', () => {
     const at = f => html.indexOf('js/' + f + '.js');
-    assertOk(at('tileset-core') < at('tileset-pictures') && at('tileset-core') < at('tileset-clear'));
+    assertOk(at('tileset-core') < at('skins/pictures') && at('tileset-core') < at('skins/clear'));
   });
 });

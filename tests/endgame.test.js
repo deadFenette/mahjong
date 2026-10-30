@@ -276,7 +276,7 @@ suite('sw.js — кэш актуален (генератор миксов)', () 
 
   test('имя кэша обновлено', () => {
     const src = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-    assertOk(/mahjong-v38-preview/.test(src), 'ожидался кэш mahjong-v38-preview*');
+    assertOk(/mahjong-v45-mixbig/.test(src), 'ожидался кэш mahjong-v45-mixbig*');
   });
 
   test('v20: шрифты локально в ASSETS (не с Google Fonts)', () => {

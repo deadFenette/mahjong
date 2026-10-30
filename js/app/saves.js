@@ -43,7 +43,11 @@
     const saved = Storage.loadGame();
     if (!saved) return;
     let layout = Layouts.getById(saved.layoutId);
-    if (!layout && saved.mixSpec) layout = MixGen.generate(saved.mixSpec); // v31
+    // v31; спецификации без ver (до v40) строятся прежним алгоритмом —
+    // иначе начатая партия получила бы другую доску
+    if (!layout && saved.mixSpec) {
+      layout = MixGen.generate(saved.mixSpec.ver ? saved.mixSpec : Object.assign({}, saved.mixSpec, { legacy: true }));
+    }
     if (!layout) { Storage.clearGame(); return; }
 
     // Создаём чистое состояние — оно станет запасным вариантом,
@@ -98,8 +102,8 @@
     Render.fitBoard(layout);
     Render.renderFull();
     A.resetLoupe(); // v34: лупа начинает с чистого листа
-    Render.playDealAnimation(); // v8: каскадная раздача при продолжении
-    Audio2.deal(); // v26: каскад мягких стуков
+    // v44: раздача и звук — когда экран игры реально показан (после шторки)
+    A.afterScreen('game', () => { Render.playDealAnimation(); Audio2.deal(); });
     Render.highlightFree(Storage.getSetting('highlight', true));
     A.updateGameInfo();
     A.showScreen('game');

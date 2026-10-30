@@ -42,7 +42,10 @@
           <span class="layout-size ${est[layout.id] >= 54 ? 'size-l' : est[layout.id] >= 40 ? 'size-m' : 'size-s'}">фишка ≈ ${est[layout.id]} px · ${est[layout.id] >= 54 ? 'крупно' : est[layout.id] >= 40 ? 'средне' : 'мелко'}</span>
         </div>
       `;
-      card.addEventListener('click', () => A.startClassic(layout.id));
+      card.addEventListener('click', () => {
+        A.launchFromCard(card); // v44: карточка «разворачивается» в доску
+        A.startClassic(layout.id);
+      });
       grid.appendChild(card);
     });
 

@@ -37,6 +37,7 @@
     // v31: Микс — экран генератора раскладки (способ, число фишек, форма)
     A.initMixScreen();
     A.initPerfSettings(); // v32
+    A.initGraphicsMenu(); // v44: меню «Графика и анимации»
     document.getElementById('btn-mix').addEventListener('click', A.openMixScreen);
     document.getElementById('btn-settings').addEventListener('click', () => {
       A.showScreen('settings');
@@ -89,8 +90,8 @@
         Game.newGame(state.layout);
         Render.fitBoard(state.layout);
         Render.renderFull();
-        Render.playDealAnimation(); // v8
-        Audio2.deal(); // v26: каскад мягких стуков
+        // v44: раздача и звук — когда экран игры реально показан (после шторки)
+        A.afterScreen('game', () => { Render.playDealAnimation(); Audio2.deal(); });
         Render.highlightFree(Storage.getSetting('highlight', true));
         A.updateGameInfo();
         A.startTimer();
@@ -118,8 +119,8 @@
         Game.newGame(state.layout);
         Render.fitBoard(state.layout);
         Render.renderFull();
-        Render.playDealAnimation(); // v8
-        Audio2.deal(); // v26: каскад мягких стуков
+        // v44: раздача и звук — когда экран игры реально показан (после шторки)
+        A.afterScreen('game', () => { Render.playDealAnimation(); Audio2.deal(); });
         Render.highlightFree(Storage.getSetting('highlight', true));
         A.updateGameInfo();
         A.showScreen('game');
@@ -159,7 +160,7 @@
 
     // Темы
     document.querySelectorAll('.theme-card').forEach(c => {
-      c.addEventListener('click', () => A.applyTheme(c.dataset.theme));
+      c.addEventListener('click', () => A.smoothChange(() => A.applyTheme(c.dataset.theme)));
     });
 
     // Размер фишек
@@ -167,12 +168,8 @@
       c.addEventListener('click', () => A.applyTileSize(c.dataset.size));
     });
 
-    // v33: образцы лиц на карточках скинов
-    A.renderSkinSamples();
-    // v19-skins: скин фишек
-    document.querySelectorAll('.skin-card').forEach(c => {
-      c.addEventListener('click', () => A.applyTileSkin(c.dataset.skin));
-    });
+    // v44: карточки скинов рисуются из реестра Tileset (js/app/skins.js)
+    A.initSkinPicker();
 
     // Прозрачность фишек — живой отклик на движение слайдера
     const transparencySlider = document.getElementById('setting-tile-transparency');

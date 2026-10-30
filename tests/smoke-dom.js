@@ -117,7 +117,8 @@ vc.on('error', (...a) => errors.push('console.error: ' + a.join(' ')));
   ev("App.applyChoice('hintStyle','max',{silent:true})");
   ev('App.actHint()');
   check('подсказка: 2 фишки с .hint-max', d.querySelectorAll('#board .tile.hint.hint-max').length === 2);
-  check('подсказка: линия между фишками нарисована', d.querySelectorAll('#board .hint-link line').length === 2);
+  // v42: линий теперь 3 — ореол + бегущий пунктир + прорисовка (hint-link-draw)
+  check('подсказка: линия между фишками нарисована', d.querySelectorAll('#board .hint-link line').length === 3);
   await new Promise(r => setTimeout(r, 2400));
   check('«очень заметная» не гаснет сама', d.querySelectorAll('#board .tile.hint-max').length === 2);
   ev('Render.clearHint()');

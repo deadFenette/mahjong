@@ -18,7 +18,13 @@
    путать. Лицо — 3–14 простых элементов, без градиентов.
    ============================================================ */
 
-const TilesetClear = (function () {
+Tileset.register({
+  id: 'clear',
+  name: 'Контраст',
+  desc: 'Крупные цифры и формы — различимо без цвета',
+  order: 40,
+  // Набор строится лениво — при первом обращении (см. tileset.js)
+  create: function () {
 
   const INK = '#111';
   const FONT = "'Arial Black','Segoe UI',Arial,'Helvetica Neue',sans-serif";
@@ -135,4 +141,5 @@ const TilesetClear = (function () {
 
   const set = TilesetCore.build(face);
   return { tiles: set.tiles, isMatch: set.isMatch, groups: set.groups };
-})();
+  }
+});

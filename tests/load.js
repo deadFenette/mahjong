@@ -49,16 +49,17 @@ function loadGameModules({ seedStorage = true } = {}) {
 
   // Порядок как в index.html (без audio.js, app.js и sw-register.js;
   // music.js в песочнице безопасен — рантайм-код без window не выполняется)
-  // v19-skins: tileset-classic.js + tileset-ornate.js + tileset.js (фасад)
+  // v44: реестр tileset.js + скины js/skins/*.js
+  // v44: реестр Tileset грузится ДО скинов; сами скины — все файлы js/skins/*.js
   const files = [
     'js/tileset-core.js',
-    'js/tileset-classic.js',
-    'js/tileset-ornate.js',
-    'js/tileset-pictures.js',
-    'js/tileset-clear.js',
     'js/tileset.js',
+    ...skinFiles(),
     'js/perf.js',
     'js/layouts.js',
+    'js/glyph-data.js',
+    'js/mixmetrics.js',
+    'js/mixglyph.js',
     'js/mixgen.js',
     'js/icons.js',
     'js/music.js',
@@ -76,11 +77,20 @@ function loadGameModules({ seedStorage = true } = {}) {
   }
 
   // Экспортируем глобальные модули из области видимости скрипта
-  // v19: добавлены TilesetClassic и TilesetOrnate для тестов скинов
-  source += `\n;globalThis.__modules = { Tileset, TilesetClassic, TilesetOrnate, TilesetPictures, TilesetClear, TilesetCore, Layouts, MixGen, Icons, Perf, Music, Storage, Achievements, Tutorial, Render, Game };`;
+  // v44: скины больше не глобальные переменные — они лежат в реестре Tileset.
+  // Старые имена (TilesetClassic…) оставлены как удобные псевдонимы для тестов.
+  source += `\n;globalThis.__modules = { Tileset, TilesetClassic: Tileset.get('classic'), TilesetOrnate: Tileset.get('ornate'), TilesetPictures: Tileset.get('pictures'), TilesetClear: Tileset.get('clear'), TilesetCore, Layouts, MixGen, MixMetrics, MixGlyph, GlyphData, Icons, Perf, Music, Storage, Achievements, Tutorial, Render, Game };`;
 
   vm.runInContext(source, context, { filename: 'mahjong-bundle.js' });
   return context.__modules;
 }
 
-module.exports = { loadGameModules, makeLocalStorageShim };
+// Файлы скинов: все js/skins/*.js, кроме служебных (имя с «_»)
+function skinFiles() {
+  return fs.readdirSync(path.join(ROOT, 'js', 'skins'))
+    .filter(f => f.endsWith('.js') && !f.startsWith('_'))
+    .sort()
+    .map(f => 'js/skins/' + f);
+}
+
+module.exports = { loadGameModules, makeLocalStorageShim, skinFiles };

@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#1a0f0a" />
   <!-- v32: режим графики определяется ДО первой отрисовки (см. js/perf.js) -->
   <script src="js/perf.js"></script>
+  <!-- v44: настройки анимаций — тоже до первой отрисовки (см. js/motion.js) -->
+  <script src="js/motion.js"></script>
   <title>Маджонг</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
@@ -32,6 +34,9 @@
        настоящие стили фишек и стоит выше в каскаде) -->
   <link rel="stylesheet" href="css/preview.css" />
   <link rel="stylesheet" href="css/menu.css" />
+  <!-- v42: пакет анимаций «Intent» — занавес, squash, кольцо матча,
+       дыхание подсказки, виньетка комбо, медальон, дождь победы, штамп -->
+  <link rel="stylesheet" href="css/motion.css" />
   <link rel="stylesheet" href="css/themes.css" />
   <link rel="stylesheet" href="css/lite.css" />
 </head>
@@ -277,6 +282,7 @@
         <div class="mix-title" id="mix-name">Узор</div>
         <div class="mix-desc" id="mix-desc"></div>
         <div class="mix-facts" id="mix-facts"></div>
+        <div class="mix-hardness-fact" id="mix-hardness-fact"></div>
         <div class="mix-actions">
           <button class="btn" id="mix-reroll" type="button">Другой узор</button>
           <button class="btn btn-primary" id="mix-play" type="button">Играть</button>
@@ -295,10 +301,31 @@
               <span class="mix-card-name">С нуля</span>
               <span class="mix-card-desc">Новая форма: слои, симметрия</span>
             </button>
+            <button class="mix-card" type="button" data-mix-method="glyph">
+              <span class="mix-card-name">Иероглиф</span>
+              <span class="mix-card-desc">Доска в форме знака или букв</span>
+            </button>
             <button class="mix-card" type="button" data-mix-method="surprise">
               <span class="mix-card-name">Сюрприз</span>
               <span class="mix-card-desc">Способ выберется сам</span>
             </button>
+          </div>
+        </div>
+
+        <div class="setting-group" id="mix-glyph-opts" hidden>
+          <h3 class="setting-title">Знак</h3>
+          <div class="setting-block">
+            <div class="setting-row">
+              <span class="setting-label">
+                <span class="setting-name">Свой знак</span>
+                <span class="setting-desc" id="mix-glyph-hint">До трёх символов: иероглиф, буквы, инициалы. Сложные знаки лучше от 120 фишек</span>
+              </span>
+            </div>
+            <input type="text" class="mix-glyph-input" id="mix-glyph-text" maxlength="3"
+                   autocomplete="off" spellcheck="false" aria-label="Знак для раскладки" />
+          </div>
+          <div class="setting-block">
+            <div class="mix-glyph-chips" id="mix-glyph-chips" role="group" aria-label="Готовые знаки"></div>
           </div>
         </div>
 
@@ -318,6 +345,22 @@
           </div>
         </div>
 
+        <div class="setting-group" id="mix-hardness-group">
+          <h3 class="setting-title">Жёсткость</h3>
+          <div class="setting-block">
+            <div class="setting-row range-row">
+              <span class="setting-label">
+                <span class="setting-name">Целевая жёсткость</span>
+                <span class="setting-desc" id="mix-hardness-hint">Любая — как получится</span>
+              </span>
+              <output class="range-output" id="mix-hardness-out" for="mix-hardness">Любая</output>
+            </div>
+            <input type="range" class="range-slider" id="mix-hardness"
+                   min="0" max="10" step="1" value="0"
+                   aria-label="Целевая жёсткость раскладки" />
+          </div>
+        </div>
+
         <div class="setting-group" id="mix-scratch-opts">
           <h3 class="setting-title">Форма</h3>
           <div class="setting-block">
@@ -332,7 +375,7 @@
                    min="1" max="5" step="1" value="3"
                    aria-label="Количество слоёв" />
           </div>
-          <div class="setting-block">
+          <div class="setting-block" id="mix-sym-block">
             <div class="setting-row">
               <span class="setting-label">
                 <span class="setting-name">Симметрия</span>
@@ -351,9 +394,17 @@
                 <span class="mix-card-name">Крест</span>
                 <span class="mix-card-desc">Четыре одинаковые четверти</span>
               </button>
+              <button class="mix-card" type="button" data-mix-sym="point">
+                <span class="mix-card-name">Поворот</span>
+                <span class="mix-card-desc">Вверх ногами то же самое</span>
+              </button>
+              <button class="mix-card" type="button" data-mix-sym="diag">
+                <span class="mix-card-name">Мандала</span>
+                <span class="mix-card-desc">Восемь осей; сетка квадратная, доска высокая</span>
+              </button>
             </div>
           </div>
-          <label class="setting-row toggle-row">
+          <label class="setting-row toggle-row" id="mix-stagger-row">
             <span class="setting-label">
               <span class="setting-name">Слои пирамидой</span>
               <span class="setting-desc">Верхние фишки лежат на стыке четырёх нижних</span>
@@ -361,6 +412,22 @@
             <input type="checkbox" id="mix-stagger" class="toggle" />
             <span class="toggle-switch"></span>
           </label>
+        </div>
+
+        <!-- v45: гигантские доски — кап фишек поднимается за галкой -->
+        <div class="setting-group" id="mix-cap-group">
+          <h3 class="setting-title">Ещё больше</h3>
+          <label class="setting-row toggle-row" id="mix-bigboard-row">
+            <span class="setting-label">
+              <span class="setting-name">Гигантские доски</span>
+              <span class="setting-desc" id="mix-bigboard-desc">Поднимает кап фишек до 600</span>
+            </span>
+            <input type="checkbox" id="mix-bigboard" class="toggle" />
+            <span class="toggle-switch"></span>
+          </label>
+          <div class="setting-block" id="mix-cap-panel" hidden>
+            <p class="mix-cap-note">Слайдер «Количество фишек» теперь доходит до 600. Фишки будут заметно мельче, партия — длиннее, генерация больших досок занимает секунды. «Из двух раскладок» работает до 200: гигантов строят «С нуля» и «Сюрприз».</p>
+          </div>
         </div>
       </div>
 
@@ -379,6 +446,8 @@
         <div class="info-block">
           <span class="info-label">Счёт</span>
           <span class="info-value" id="game-score">0</span>
+          <!-- v44: индикатор серии — полоска сгорает за окно комбо -->
+          <span class="combo-meter" id="combo-meter" data-combo="" hidden aria-hidden="true"><i class="cm-bar"></i></span>
         </div>
         <div class="info-block">
           <span class="info-label">Пары</span>
@@ -576,28 +645,8 @@
 
       <div class="setting-group">
         <h3 class="setting-title">Скин фишек</h3>
-        <div class="skin-picker">
-          <button class="skin-card active" data-skin="classic">
-            <span class="skin-sample" aria-hidden="true"></span>
-            <span class="skin-name">Классический</span>
-            <span class="skin-desc">Чистый минимализм, без рамок</span>
-          </button>
-          <button class="skin-card" data-skin="ornate">
-            <span class="skin-sample" aria-hidden="true"></span>
-            <span class="skin-name">Богатый</span>
-            <span class="skin-desc">Золотая гравировка и орнаменты</span>
-          </button>
-          <button class="skin-card" data-skin="pictures">
-            <span class="skin-sample" aria-hidden="true"></span>
-            <span class="skin-name">Картинки</span>
-            <span class="skin-desc">Фрукты, цветы и зверушки вместо иероглифов</span>
-          </button>
-          <button class="skin-card" data-skin="clear">
-            <span class="skin-sample" aria-hidden="true"></span>
-            <span class="skin-name">Контраст</span>
-            <span class="skin-desc">Крупные цифры и формы — различимо без цвета</span>
-          </button>
-        </div>
+        <!-- v44: карточки скинов строит модуль skins из реестра Tileset -->
+        <div class="skin-picker" id="skin-picker"></div>
       </div>
 
       <div class="setting-group">
@@ -823,23 +872,69 @@
         </label>
       </div>
 
+      <!-- v44: раскрывающееся меню «Графика и анимации» (логика — модуль graphics) -->
       <div class="setting-group">
-        <h3 class="setting-title">Графика</h3>
-        <p class="setting-desc" id="perf-note">Если игра тормозит — включите «Лёгкая»: она отключает размытие, свечения и анимации фона.</p>
-        <div class="mix-picker" id="perf-picker">
-          <button class="mix-card" type="button" data-perf-mode="auto">
-            <span class="mix-card-name">Авто</span>
-            <span class="mix-card-desc">Выберется само по вашему компьютеру</span>
-          </button>
-          <button class="mix-card" type="button" data-perf-mode="lite">
-            <span class="mix-card-name">Лёгкая</span>
-            <span class="mix-card-desc">Для старых ПК и Windows 7</span>
-          </button>
-          <button class="mix-card" type="button" data-perf-mode="full">
-            <span class="mix-card-name">Полная</span>
-            <span class="mix-card-desc">Свечения, пыль и тени</span>
-          </button>
-        </div>
+        <details class="gfx-menu" id="gfx-menu">
+          <summary class="gfx-summary">
+            <span class="gfx-summary-text">
+              <span class="setting-title gfx-title">Графика и анимации</span>
+              <span class="setting-desc" id="gfx-summary-note">Анимации включены</span>
+            </span>
+            <span class="gfx-chevron" aria-hidden="true"></span>
+          </summary>
+
+          <div class="gfx-body">
+            <label class="setting-row toggle-row">
+              <span class="setting-label">
+                <span class="setting-name">Анимации</span>
+                <span class="setting-desc" id="gfx-master-note">Общий выключатель всего движения в игре</span>
+              </span>
+              <input type="checkbox" id="gfx-master" class="toggle" />
+              <span class="toggle-switch"></span>
+            </label>
+
+            <div class="gfx-sub" id="gfx-sub">
+              <p class="gfx-label">Быстрый выбор</p>
+              <div class="mix-picker gfx-presets" id="gfx-presets">
+                <button class="mix-card" type="button" data-gfx-preset="all">
+                  <span class="mix-card-name">Все эффекты</span>
+                  <span class="mix-card-desc">Как задумано</span>
+                </button>
+                <button class="mix-card" type="button" data-gfx-preset="calm">
+                  <span class="mix-card-name">Спокойно</span>
+                  <span class="mix-card-desc">Без тряски, вспышек и дождя</span>
+                </button>
+                <button class="mix-card" type="button" data-gfx-preset="off">
+                  <span class="mix-card-name">Выключено</span>
+                  <span class="mix-card-desc">Никакого движения</span>
+                </button>
+              </div>
+
+              <p class="gfx-label">Переход между экранами</p>
+              <div class="mix-picker gfx-transitions" id="gfx-transitions"></div>
+
+              <p class="gfx-label">Что анимировать</p>
+              <div class="gfx-fx-list" id="gfx-fx-list"></div>
+            </div>
+
+            <p class="gfx-label">Режим графики</p>
+            <p class="setting-desc" id="perf-note">Если игра тормозит — включите «Лёгкая»: она отключает размытие, свечения и анимации фона.</p>
+            <div class="mix-picker" id="perf-picker">
+              <button class="mix-card" type="button" data-perf-mode="auto">
+                <span class="mix-card-name">Авто</span>
+                <span class="mix-card-desc">Выберется само по вашему компьютеру</span>
+              </button>
+              <button class="mix-card" type="button" data-perf-mode="lite">
+                <span class="mix-card-name">Лёгкая</span>
+                <span class="mix-card-desc">Для старых ПК и Windows 7</span>
+              </button>
+              <button class="mix-card" type="button" data-perf-mode="full">
+                <span class="mix-card-name">Полная</span>
+                <span class="mix-card-desc">Свечения, пыль и тени</span>
+              </button>
+            </div>
+          </div>
+        </details>
       </div>
 
       <div class="setting-group danger">
@@ -1018,13 +1113,25 @@
   <!-- Toast (всплывающие сообщения) — озвучивается скринридером -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
+  <!-- v42: «Занавес» — лаковая шторка при смене экранов (app/core.js).
+       Две панели сходятся к центру и расходятся; переливчатая печать
+       福 в момент смены. Скрыт, пока не нужен. -->
+  <div class="curtain" id="curtain" aria-hidden="true" hidden>
+    <div class="curtain-panel curtain-top"></div>
+    <div class="curtain-panel curtain-bottom"></div>
+  </div>
+
   <script src="js/tileset-core.js"></script>
-  <script src="js/tileset-classic.js"></script>
-  <script src="js/tileset-ornate.js"></script>
-  <script src="js/tileset-pictures.js"></script>
-  <script src="js/tileset-clear.js"></script>
+  <!-- v44: реестр скинов — ДО самих скинов; каждый js/skins/*.js регистрирует себя -->
   <script src="js/tileset.js"></script>
+  <script src="js/skins/classic.js"></script>
+  <script src="js/skins/ornate.js"></script>
+  <script src="js/skins/pictures.js"></script>
+  <script src="js/skins/clear.js"></script>
   <script src="js/layouts.js"></script>
+  <script src="js/glyph-data.js"></script>
+  <script src="js/mixmetrics.js"></script>
+  <script src="js/mixglyph.js"></script>
   <script src="js/mixgen.js"></script>
   <script src="js/icons.js"></script>
   <!-- v26-audio: модульные звуковые эффекты.
@@ -1044,6 +1151,8 @@
   <script src="js/sounds/shuffle.js"></script>
   <script src="js/sounds/deal.js"></script>
   <script src="js/sounds/win.js"></script>
+  <!-- v42: глухой «шлепок» печати для тостов о достижениях -->
+  <script src="js/sounds/stamp.js"></script>
   <script src="js/sounds/index.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/music.js"></script>
@@ -1060,7 +1169,11 @@
   <script src="js/app/saves.js"></script>
   <script src="js/app/gallery.js"></script>
   <script src="js/app/settings.js"></script>
+  <!-- v44: карточки и применение скинов -->
+  <script src="js/app/skins.js"></script>
   <script src="js/app/options.js"></script>
+  <!-- v44: меню «Графика и анимации» -->
+  <script src="js/app/graphics.js"></script>
   <!-- v38: живое превью рамок фишек на экране настроек -->
   <script src="js/app/preview.js"></script>
   <script src="js/app/pause.js"></script>

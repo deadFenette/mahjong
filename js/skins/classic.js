@@ -4,7 +4,13 @@
    китайскими символами, реалистичными точками, бамбуком.
    ============================================================ */
 
-const TilesetClassic = (function () {
+Tileset.register({
+  id: 'classic',
+  name: 'Классический',
+  desc: 'Чистый минимализм, без рамок',
+  order: 10,
+  // Набор строится лениво — при первом обращении (см. tileset.js)
+  create: function () {
 
   // ---------- SVG-обёртка ----------
   function svg(inner, viewBox = '0 0 100 120') {
@@ -266,4 +272,5 @@ const TilesetClassic = (function () {
     isMatch,
     groups: { dots: dotNames, bamboo: bambooNames, characters: charNames, winds, dragons, flowers: flowerNames, seasons: seasonNames },
   };
-})();
+  }
+});

@@ -23,27 +23,30 @@
 (function (A) {
   'use strict';
 
-  // Размер сцены и фишек (соответствует CSS .preview-board)
-  const TILE_W = 46;
-  const TILE_H = 64;
+  // Размер фишек (соответствует CSS .preview-board). Сцена 340×252.
+  const TILE_W = 50;
+  const TILE_H = 70;
 
   // Кто играет какую роль: suit/rank — лицо фишки (ищется в Tileset,
   // копии разные, чтобы SVG-градиенты не конфликтовали по id),
   // x/y — позиция на мини-столе, layer — слой (оттенок фишки),
-  // label — [текст, x, y] таблички-подписи на сукне.
+  // label — [текст, x центра, y] таблички-подписи: центрируются по x
+  // и стоят в собственной полосе под рядом фишек — ничто не наезжает.
+  //   Ряд 1: доступная · закрытая · выбранная (на закрытой) · двойник
+  //   Ряд 2: пара подсказки
   const CAST = [
-    { role: 'free',     suit: 'dragons',    rank: 'G', nth: 0, x: 6,   y: 54,  layer: 0, label: ['доступная', 1, 122] },
-    { role: 'blocked',  suit: 'winds',      rank: 'E', nth: 0, x: 66,  y: 54,  layer: 0, label: ['закрытая', 80, 122] },
-    { role: 'under',    suit: 'characters', rank: 5,   nth: 0, x: 126, y: 54,  layer: 0 },
-    { role: 'selected', suit: 'dragons',    rank: 'R', nth: 0, x: 148, y: 24,  layer: 1, label: ['выбранная', 132, 2] },
-    { role: 'twin',     suit: 'dragons',    rank: 'R', nth: 1, x: 266, y: 54,  layer: 0, label: ['двойник', 252, 122] },
-    { role: 'hintA',    suit: 'dots',       rank: 1,   nth: 0, x: 86,  y: 152, layer: 0 },
-    { role: 'hintB',    suit: 'dots',       rank: 1,   nth: 1, x: 172, y: 152, layer: 0, label: ['подсказка', 110, 222] },
+    { role: 'free',     suit: 'dragons',    rank: 'G', nth: 0, x: 10,  y: 24,  layer: 0, label: ['доступная', 35, 104] },
+    { role: 'blocked',  suit: 'winds',      rank: 'E', nth: 0, x: 90,  y: 24,  layer: 0, label: ['закрытая', 115, 104] },
+    { role: 'under',    suit: 'characters', rank: 5,   nth: 0, x: 166, y: 24,  layer: 0 },
+    { role: 'selected', suit: 'dragons',    rank: 'R', nth: 0, x: 180, y: 12,  layer: 1, label: ['выбранная', 205, 104] },
+    { role: 'twin',     suit: 'dragons',    rank: 'R', nth: 1, x: 282, y: 24,  layer: 0, label: ['двойник', 307, 104] },
+    { role: 'hintA',    suit: 'dots',       rank: 1,   nth: 0, x: 95,  y: 150, layer: 0 },
+    { role: 'hintB',    suit: 'dots',       rank: 1,   nth: 1, x: 195, y: 150, layer: 0, label: ['подсказка', 170, 230] },
   ];
 
   // Центры пары подсказки — для пунктирной линии между фишками
-  const LINK_FROM = { x: 86 + TILE_W / 2, y: 152 + TILE_H / 2 };
-  const LINK_TO = { x: 172 + TILE_W / 2, y: 152 + TILE_H / 2 };
+  const LINK_FROM = { x: 95 + TILE_W / 2, y: 150 + TILE_H / 2 };
+  const LINK_TO = { x: 195 + TILE_W / 2, y: 150 + TILE_H / 2 };
 
   const HINT_STYLES = ['normal', 'bold', 'max'];
   const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -197,11 +200,9 @@
     };
     const sel = document.body.dataset.sel || 'soft';
 
-    let skinName = 'Классический';
+    let skinName = '—';
     if (typeof Tileset !== 'undefined') {
-      const id = typeof Tileset.activeSkinId === 'function'
-        ? Tileset.activeSkinId() : Storage.getSetting('tileSkin', 'classic');
-      const known = Tileset.SKINS.find(k => k.id === id);
+      const known = Tileset.SKINS.find(k => k.id === Tileset.activeSkinId());
       if (known) skinName = known.name;
     }
 
@@ -210,7 +211,8 @@
       ['Выбранная фишка', SEL_TEXT[sel] || SEL_TEXT.soft],
       ['Двойники выбранной', showMatches ? 'пунктирная рамка' : 'не выделяются'],
       ['Подсказка', HINT_TEXT[hintStyle]],
-      ['Закрытые фишки', transparency > 0 ? 'стеклянные, ' + transparency + '%' : 'плотные'],
+      ['Закрытые фишки', hl === 'off' ? 'как доступные (подсветка выкл)'
+        : transparency > 0 ? 'стеклянные, ' + transparency + '%' : 'плотные'],
       ['Скин фишек', skinName],
     ];
     legend.innerHTML = rows.map(r =>

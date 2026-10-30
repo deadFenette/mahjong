@@ -26,8 +26,8 @@ function loadWithSkin(skin) {
     },
   });
   let src = '';
-  for (const f of ['tileset-core', 'tileset-classic', 'tileset-ornate', 'tileset-pictures', 'tileset-clear', 'tileset']) {
-    src += fs.readFileSync(path.join(ROOT, 'js', f + '.js'), 'utf8') + '\n';
+  for (const f of ['js/tileset-core.js', 'js/tileset.js', ...require('./load').skinFiles()]) {
+    src += fs.readFileSync(path.join(ROOT, f), 'utf8') + '\n';
   }
   vm.runInContext(src + ';globalThis.__T = Tileset;', ctx);
   return ctx.__T;
@@ -226,20 +226,19 @@ suite('Разметка и подключение скинов', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 
-  test('в настройках 4 карточки скинов с образцами', () => {
-    assertEq((html.match(/class="skin-card/g) || []).length, 4);
-    assertEq((html.match(/class="skin-sample"/g) || []).length, 4);
-    for (const id of ['classic', 'ornate', 'pictures', 'clear']) assertOk(html.includes(`data-skin="${id}"`), id);
+  test('в настройках пустой контейнер #skin-picker: карточки строит js/app/skins.js из реестра', () => {
+    assertOk(/<div class="skin-picker" id="skin-picker"><\/div>/.test(html));
+    assertEq((html.match(/class="skin-card/g) || []).length, 0, 'в HTML не должно быть зашитых карточек');
   });
 
-  test('скрипты подключены в правильном порядке (core → скины → фасад)', () => {
+  test('скрипты подключены в правильном порядке (core → реестр → скины)', () => {
     const at = f => html.indexOf(`js/${f}.js`);
-    assertOk(at('tileset-core') > 0 && at('tileset-core') < at('tileset-classic'));
-    assertOk(at('tileset-pictures') > at('tileset-ornate') && at('tileset-clear') > at('tileset-pictures'));
-    assertOk(at('tileset') > at('tileset-clear'), 'фасад после всех скинов');
+    assertOk(at('tileset-core') > 0 && at('tileset-core') < at('tileset'));
+    assertOk(at('tileset') > 0 && at('tileset') < at('skins/classic'), 'реестр до скинов');
+    assertOk(at('skins/pictures') > at('skins/ornate') && at('skins/clear') > at('skins/pictures'));
   });
 
-  test('service worker кэширует новые файлы', () => {
-    for (const f of ['tileset-core', 'tileset-pictures', 'tileset-clear']) assertOk(sw.includes(`./js/${f}.js`), f);
+  test('service worker кэширует реестр и скины', () => {
+    for (const f of ['tileset-core', 'tileset', 'skins/pictures', 'skins/clear']) assertOk(sw.includes(`./js/${f}.js`), f);
   });
 });

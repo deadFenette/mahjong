@@ -120,7 +120,7 @@ function loadAudioSandbox() {
   };
   const ctx = vm.createContext(sandbox);
   const soundIds = ['hover', 'click', 'deselect', 'blocked', 'match', 'combo',
-    'mismatch', 'hint', 'undo', 'shuffle', 'deal', 'win'];
+    'mismatch', 'hint', 'undo', 'shuffle', 'deal', 'win', 'stamp'];
   const files = ['js/storage.js', 'js/music.js', 'js/sounds/init.js',
     ...soundIds.map(id => `js/sounds/${id}.js`), 'js/sounds/index.js', 'js/audio.js'];
   let src = '';

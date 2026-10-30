@@ -28,51 +28,6 @@
     }
   }
 
-  // ---------- Скин фишек (v19-skins) ----------
-  // Меняет набор SVG для фишек: 'classic' (по умолчанию) или 'ornate'.
-  // Записывает настройку в Storage и ПЕРЕРИСОВЫВАЕТ доску на лету —
-  // даже посреди партии. Фасад Tileset читает Storage при каждом
-  // доступе к .tiles, поэтому Render.renderFull() сразу видит новый скин.
-  // opts.silent = true — не показывать toast (используется при загрузке
-  // настроек при старте приложения, чтобы не было всплывашки).
-  function applyTileSkin(skin, opts) {
-    // v33: допустимые скины берём из реестра (их уже 4)
-    const known = Tileset.SKINS.find(k => k.id === skin);
-    if (!known) skin = 'classic';
-    Storage.setSetting('tileSkin', skin);
-    document.querySelectorAll('.skin-card').forEach(c => {
-      c.classList.toggle('active', c.dataset.skin === skin);
-    });
-    if (A.state.currentScreen === 'game') {
-      // Перерисовываем фишки с новым скином. fitBoard не нужен —
-      // размер фишек не меняется, только их лица.
-      Render.renderFull();
-      Render.highlightFree(Storage.getSetting('highlight', true));
-    }
-    A.notifySettings('tileSkin', skin); // v38: превью перерисует лица
-    if (!opts || !opts.silent) {
-      A.toast('Скин фишек: ' + (known ? known.name : 'Классический'));
-    }
-  }
-
-  // ---------- Образцы на карточках скинов (v33) ----------
-  // Три лица из каждого скина — чтобы выбирать глазами, а не по названию.
-  // id градиентов внутри SVG делаем уникальными (как Render.makeFaceUnique).
-  function renderSkinSamples() {
-    document.querySelectorAll('.skin-card').forEach(card => {
-      const box = card.querySelector('.skin-sample');
-      if (!box) return;
-      const id = card.dataset.skin;
-      box.innerHTML = Tileset.sampleFaces(id).map((face, i) => {
-        const key = 'sk' + id + i;
-        const f = face
-          .replace(/id="([A-Za-z0-9_-]+)"/g, (m, x) => 'id="' + x + '-' + key + '"')
-          .replace(/url\(#([A-Za-z0-9_-]+)\)/g, (m, x) => 'url(#' + x + '-' + key + ')');
-        return '<span class="skin-sample-tile">' + f + '</span>';
-      }).join('');
-    });
-  }
-
   // ---------- Масштаб фишек прямо в игре (v14, расширено v19) ----------
   // Кнопка-лупа в шапке и клавиши + / − переключают тот же параметр
   // tileSize, что и «Настройки → Размер фишек».
@@ -206,7 +161,7 @@
     applyTheme(Storage.getSetting('theme', 'traditional'));
     applyTileSize(Storage.getSetting('tileSize', 'large'));
     // v19-skins: скин фишек (classic по умолчанию). silent — без toast.
-    applyTileSkin(Storage.getSetting('tileSkin', 'classic'), { silent: true });
+    A.applyTileSkin(Storage.getSetting('tileSkin', Tileset.defaultSkinId()), { silent: true });
     // Прозрачность по умолчанию 0% — фишки плотные (регрессия v5: было 0.88)
     applyTileTransparency(Storage.getSetting('tileTransparency', 0), { persist: false });
     // v10: музыка — тумблер, громкость и заливка слайдера
@@ -230,10 +185,8 @@
     applySfxVolume,
     applyTheme,
     applyTileSize,
-    applyTileSkin,
     applyTileTransparency,
     loadSettings,
-    renderSkinSamples,
     updateNowPlaying,
     updatePauseMusicLabel,
   });
